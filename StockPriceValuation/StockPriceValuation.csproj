@@ -54,18 +54,23 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
+    <Compile Include="Base\ObservableObject.cs" />
+    <Compile Include="Base\RelayCommand.cs" />
+    <Compile Include="Models\StockPriceValuationModel.cs" />
+    <Compile Include="Stock.cs" />
+    <Compile Include="ViewModels\StockPriceValuationViewModel.cs" />
+    <Compile Include="Valuation.cs" />
+    <Compile Include="Views\StockPriceValuationView.xaml.cs">
+      <DependentUpon>StockPriceValuationView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
+    <Page Include="Views\StockPriceValuationView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
