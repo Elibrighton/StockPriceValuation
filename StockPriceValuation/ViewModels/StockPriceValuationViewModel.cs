@@ -41,16 +41,9 @@ namespace StockPriceValuation
 
         public string GetStockPriceValuation()
         {
-            var stockPriceValuation = 0.0;
+            var stock = GetStock();
 
-            var stock = new Stock()
-            {
-                Company = "Facebook, Inc.",
-                Code = "FB",
-                TtmEps = 6.04,
-                Eps = 0.2362,
-                PeRation = 19.375
-            };
+            var stockPriceValuation = 0.0;
 
             var valuation = new Valuation(stock);
             valuation.Years = 10;
@@ -59,6 +52,21 @@ namespace StockPriceValuation
             stockPriceValuation = valuation.ValueStockPrice();
 
             return string.Concat("$", Math.Round(valuation.ValueStockPrice()));
+        }
+
+        public Stock GetStock()
+        {
+            var stock = new Stock("Facebook, Inc.", "FB");
+            //{
+            //    TtmEps = 6.04,
+            //    Eps = 0.2362,
+            //    PeRation = 19.375
+            //};
+            stock.FindTtmEps();
+            stock.FindEps();
+            stock.FindPeRatio();
+
+            return stock;
         }
     }
 }
