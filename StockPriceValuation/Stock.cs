@@ -75,7 +75,93 @@ namespace StockPriceValuation
 
         public void FindEps()
         {
+            var epsFirst = FindFirstEps();
+        }
 
+        private double FindFirstEps()
+        {
+            var eps = 0.0;
+            var url = GetEpsUrl(_code);
+            var webResponse = GetWebResponse(url);
+
+            if (!string.IsNullOrEmpty(webResponse))
+            {
+                using (var stream = GenerateStreamFromString(webResponse))
+                {
+                    HtmlAgilityPack.HtmlDocument htmlDoc = new HtmlAgilityPack.HtmlDocument();
+                    htmlDoc.Load(stream, Encoding.UTF8);
+
+                    if (htmlDoc.ParseErrors != null && htmlDoc.ParseErrors.Count() > 0)
+                    {
+                        // Handle any parse errors as required
+                    }
+                    else
+                    {
+                        if (htmlDoc.DocumentNode != null)
+                        {
+                            HtmlAgilityPack.HtmlNode bodyNode = htmlDoc.DocumentNode.SelectSingleNode("//body");
+
+                            if (bodyNode != null)
+                            {
+                                var tdNodes = htmlDoc.DocumentNode.SelectNodes("//td");
+
+                                if (tdNodes != null)
+                                {
+                                    foreach (var node in tdNodes)
+                                    {
+                                        if (node.InnerText == "Total Equity")
+                                        {
+                                            var parentNode = node.ParentNode;
+                                            if (parentNode.Name == "tr")
+                                            {
+                                                var equities = new List<int>();
+                                                var childrenNodes = parentNode.SelectNodes("td");
+
+                                                foreach (var childNode in childrenNodes)
+                                                {
+                                                    var innerText = childNode.InnerText;
+
+                                                    if (!string.IsNullOrWhiteSpace(innerText) && innerText != "Total Equity")
+                                                    {
+                                                        var text = innerText.Replace(",", "");
+                                                        equities.Add(Convert.ToInt32(text));
+                                                    }
+                                                }
+
+                                                if (equities.Count > 0)
+                                                {
+                                                    var currentEquity = equities[0];
+                                                    var ageEquity = equities.Count - 1;
+                                                    var initialEquity = equities[ageEquity];
+                                                    // how to calculate equity growth percent?
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            return eps;
+        }
+
+        public static Stream GenerateStreamFromString(string s)
+        {
+            var stream = new MemoryStream();
+            var writer = new StreamWriter(stream);
+            writer.Write(s);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
+        }
+
+        private string GetEpsUrl(string code)
+        {
+            return string.Concat("https://quotes.wsj.com/", code, "/financials/annual/balance-sheet");
         }
 
         public void FindPeRatio()
