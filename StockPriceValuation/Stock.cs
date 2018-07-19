@@ -16,7 +16,7 @@ namespace StockPriceValuation
 
         public double TtmEps { get; set; }
         public double Eps { get; set; }
-        public double PeRation { get; set; }
+        public double PeRatio { get; set; }
 
         public Stock(string company, string code)
         {
@@ -187,13 +187,13 @@ namespace StockPriceValuation
 
                             if (bodyNode != null)
                             {
-                                var tdNodes = htmlDoc.DocumentNode.SelectNodes("//span");
+                                var spanNodes = htmlDoc.DocumentNode.SelectNodes("//span");
 
-                                if (tdNodes != null)
+                                if (spanNodes != null)
                                 {
                                     var hasEps = false;
 
-                                    foreach (var node in tdNodes)
+                                    foreach (var node in spanNodes)
                                     {
                                         if (node.InnerText == "Next 5 years (per annum)")
                                         {
@@ -215,11 +215,7 @@ namespace StockPriceValuation
                                                     }
 
                                                     hasEps = true;
-
-                                                    if (hasEps)
-                                                    {
-                                                        break;
-                                                    }
+                                                    break;
                                                 }
                                             }
                                         }
@@ -259,9 +255,140 @@ namespace StockPriceValuation
             return string.Concat("https://au.finance.yahoo.com/quote/", code, "/analysis");
         }
 
+        private string GetSecondPeRatioUrl(string code)
+        {
+            return string.Concat("https://www.msn.com/en-au/money/stockdetails/analysis/fi-126.1.", code, ".NAS");
+        }
+
         public void FindPeRatio()
         {
+            var firstPeRation = FindFirstPeRatio();
+            var secondPeRation = FindSecondPeRatio();
 
+            PeRatio = firstPeRation < secondPeRation ? firstPeRation : secondPeRation;
+        }
+
+        public double FindFirstPeRatio()
+        {
+            return Eps * 2;
+        }
+
+        public double FindSecondPeRatio()
+        {
+            var peRatio = 0.0;
+            var highPeRatio = 0.0;
+            var lowPeRatio = 0.0;
+            var url = GetSecondPeRatioUrl(_code);
+            var webResponse = GetWebResponse(url);
+
+            if (!string.IsNullOrEmpty(webResponse))
+            {
+                using (var stream = GenerateStreamFromString(webResponse))
+                {
+                    HtmlAgilityPack.HtmlDocument htmlDoc = new HtmlAgilityPack.HtmlDocument();
+                    htmlDoc.Load(stream, Encoding.UTF8);
+
+                    if (htmlDoc.ParseErrors != null && htmlDoc.ParseErrors.Count() > 0)
+                    {
+                        // Handle any parse errors as required
+                    }
+                    else
+                    {
+                        if (htmlDoc.DocumentNode != null)
+                        {
+                            HtmlAgilityPack.HtmlNode bodyNode = htmlDoc.DocumentNode.SelectSingleNode("//body");
+
+                            if (bodyNode != null)
+                            {
+                                var pNodes = htmlDoc.DocumentNode.SelectNodes("//p");
+
+                                if (pNodes != null)
+                                {
+                                    var hasHighPeRatio = false;
+                                    var hasLowPeRatio = false;
+
+                                    foreach (var node in pNodes)
+                                    {
+                                        if (node.InnerText == "P/E Ratio 5-Year High")
+                                        {
+                                            var parentNode = node.ParentNode.ParentNode.ParentNode;
+                                            var childrenNodes = parentNode.SelectNodes("li");
+
+                                            foreach (var childNode in childrenNodes)
+                                            {
+                                                var childPNodes = childNode.SelectNodes("p");
+
+                                                foreach (var childTwoNode in childrenNodes)
+                                                {
+                                                    var innerText = childTwoNode.InnerText;
+
+                                                    if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("P/E Ratio 5-Year High"))
+                                                    {
+                                                        double convertedInnerText;
+
+                                                        if (Double.TryParse(innerText, out convertedInnerText))
+                                                        {
+                                                            highPeRatio = convertedInnerText;
+                                                            hasHighPeRatio = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+
+                                                if (hasHighPeRatio)
+                                                {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        else if (node.InnerText == "P/E Ratio 5-Year Low")
+                                        {
+                                            var parentNode = node.ParentNode.ParentNode.ParentNode;
+                                            var childrenNodes = parentNode.SelectNodes("li");
+
+                                            foreach (var childNode in childrenNodes)
+                                            {
+                                                var childPNodes = childNode.SelectNodes("p");
+
+                                                foreach (var childTwoNode in childrenNodes)
+                                                {
+                                                    var innerText = childTwoNode.InnerText;
+
+                                                    if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("P/E Ratio 5-Year Low"))
+                                                    {
+                                                        double convertedInnerText;
+
+                                                        if (Double.TryParse(innerText, out convertedInnerText))
+                                                        {
+                                                            lowPeRatio = convertedInnerText;
+                                                            hasLowPeRatio = true;
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+
+                                                if (hasLowPeRatio)
+                                                {
+                                                    break;
+                                                }
+                                            }
+                                        }
+
+                                        if (hasHighPeRatio && hasLowPeRatio)
+                                        {
+                                            // return average of high and low pe ratio
+                                            peRatio = (highPeRatio + lowPeRatio) / 2;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return peRatio;
         }
     }
 }

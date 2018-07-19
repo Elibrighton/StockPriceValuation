@@ -24,7 +24,7 @@ namespace StockPriceValuation
             var stockPriceValue = 0.0;
 
             var epsIn10Years = EpsIn10Years(_stock.TtmEps, _stock.Eps, Years);
-            var sharePriceIn10Years = SharePriceIn10Years(epsIn10Years, _stock.PeRation);
+            var sharePriceIn10Years = SharePriceIn10Years(epsIn10Years, _stock.PeRatio);
             var yearsToDoubleMoney = YearsToDoubleMoney(RateOfReturn);
             var numberOfYearsToDoubleMoney = NumberOfYearsToDoubleMoney(Years, yearsToDoubleMoney);
             var priceToBuySharesAtRateOfReturn = PriceToBuySharesAtRateOfReturn(numberOfYearsToDoubleMoney, sharePriceIn10Years);
