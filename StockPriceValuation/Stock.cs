@@ -26,29 +26,101 @@ namespace StockPriceValuation
 
         public void FindTtmEps()
         {
-            var ttmEps = string.Empty;
             var url = GetTtmEpsUrl(_code);
             var webResponse = GetWebResponse(url);
 
             if (!string.IsNullOrEmpty(webResponse))
             {
-                //<span class="Trsdu(0.3s) " data-reactid="97">6.04</span>
-                var pattern = @"<span\sclass=""trsdu\(0.3s\)\s""\sdata-reactid=""97"">\d+.\d+</span>";
-                var regex = new Regex(pattern, RegexOptions.IgnoreCase);
-                var match = regex.Match(webResponse);
-
-                if (match.Success)
+                using (var stream = GenerateStreamFromString(webResponse))
                 {
-                    var ttmEpsMatch = match.Value;
-                    var index = ttmEpsMatch.IndexOf('>') + 1;
-                    ttmEps = ttmEpsMatch.Substring(index, ttmEpsMatch.LastIndexOf('<') - index);
-                    var number = 0.0;
+                    HtmlAgilityPack.HtmlDocument htmlDoc = new HtmlAgilityPack.HtmlDocument();
+                    htmlDoc.Load(stream, Encoding.UTF8);
 
-                    if (Double.TryParse(ttmEps, out number))
+                    if (htmlDoc.ParseErrors != null && htmlDoc.ParseErrors.Count() > 0)
                     {
-                        TtmEps = number;
+                        // Handle any parse errors as required
+                    }
+                    else
+                    {
+                        if (htmlDoc.DocumentNode != null)
+                        {
+                            HtmlAgilityPack.HtmlNode bodyNode = htmlDoc.DocumentNode.SelectSingleNode("//body");
+
+                            if (bodyNode != null)
+                            {
+                                var spanNodes = htmlDoc.DocumentNode.SelectNodes("//span");
+
+                                if (spanNodes != null)
+                                {
+                                    var hasTtmEps = false;
+
+                                    foreach (var node in spanNodes)
+                                    {
+                                        if (node.InnerText == "EPS (TTM)")
+                                        {
+                                            var parentNode = node.ParentNode.ParentNode;
+
+                                            if (parentNode.Name == "tr")
+                                            {
+                                                var childrenNodes = parentNode.SelectNodes("td");
+
+                                                foreach (var childNode in childrenNodes)
+                                                {
+                                                    var childSpanNodes = childNode.SelectNodes("span");
+
+                                                    foreach (var childTwoNode in childSpanNodes)
+                                                    {
+                                                        var innerText = childTwoNode.InnerText;
+
+                                                        if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("EPS (TTM)"))
+                                                        {
+                                                            double convertedInnerText;
+
+                                                            if (Double.TryParse(innerText, out convertedInnerText))
+                                                            {
+                                                                TtmEps = convertedInnerText;
+                                                                hasTtmEps = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if (hasTtmEps)
+                                                    {
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if (hasTtmEps)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+
+                //<span class="Trsdu(0.3s) " data-reactid="97">6.04</span>
+                //var pattern = @"<span\sclass=""trsdu\(0.3s\)\s""\sdata-reactid=""97"">\d+.\d+</span>";
+                //var regex = new Regex(pattern, RegexOptions.IgnoreCase);
+                //var match = regex.Match(webResponse);
+
+                //if (match.Success)
+                //{
+                //    var ttmEpsMatch = match.Value;
+                //    var index = ttmEpsMatch.IndexOf('>') + 1;
+                //    ttmEps = ttmEpsMatch.Substring(index, ttmEpsMatch.LastIndexOf('<') - index);
+                //    var number = 0.0;
+
+                //    if (Double.TryParse(ttmEps, out number))
+                //    {
+                //        TtmEps = number;
+                //    }
+                //}
             }
         }
 
@@ -140,7 +212,7 @@ namespace StockPriceValuation
                                                     double initialEquity = equities[ageEquity];
 
                                                     // calculate equity growth percent https://www.wikihow.com/Calculate-Growth-Rate
-                                                    eps = Math.Floor((Math.Pow((currentEquity / initialEquity), (1 / Convert.ToDouble(ageEquity))) - 1) * 100);
+                                                    eps = Math.Pow((currentEquity / initialEquity), (1 / Convert.ToDouble(ageEquity))) - 1;
                                                     hasEps = true;
                                                 }
                                             }
@@ -211,7 +283,7 @@ namespace StockPriceValuation
 
                                                     if (Double.TryParse(innerText, out convertedInnerText))
                                                     {
-                                                        eps = Math.Floor(convertedInnerText);
+                                                        eps = convertedInnerText / 100;
                                                     }
 
                                                     hasEps = true;
@@ -270,7 +342,7 @@ namespace StockPriceValuation
 
         public double FindFirstPeRatio()
         {
-            return Eps * 2;
+            return (Eps * 100) * 2;
         }
 
         public double FindSecondPeRatio()

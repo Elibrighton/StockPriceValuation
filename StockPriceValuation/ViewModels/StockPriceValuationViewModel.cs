@@ -62,7 +62,7 @@ namespace StockPriceValuation
             //    Eps = 0.2362,
             //    PeRation = 19.375
             //};
-            //stock.FindTtmEps();
+            stock.FindTtmEps();
             stock.FindEps();
             stock.FindPeRatio();
 
