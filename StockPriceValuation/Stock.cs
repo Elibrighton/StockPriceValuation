@@ -76,12 +76,15 @@ namespace StockPriceValuation
         public void FindEps()
         {
             var epsFirst = FindFirstEps();
+            var epsSecond = FindSecondEps();
+
+            Eps = epsFirst < epsSecond ? epsFirst : epsSecond;
         }
 
         private double FindFirstEps()
         {
             var eps = 0.0;
-            var url = GetEpsUrl(_code);
+            var url = GetFirstEpsUrl(_code);
             var webResponse = GetWebResponse(url);
 
             if (!string.IsNullOrEmpty(webResponse))
@@ -107,6 +110,8 @@ namespace StockPriceValuation
 
                                 if (tdNodes != null)
                                 {
+                                    var hasEps = false;
+
                                     foreach (var node in tdNodes)
                                     {
                                         if (node.InnerText == "Total Equity")
@@ -130,12 +135,20 @@ namespace StockPriceValuation
 
                                                 if (equities.Count > 0)
                                                 {
-                                                    var currentEquity = equities[0];
+                                                    double currentEquity = equities[0];
                                                     var ageEquity = equities.Count - 1;
-                                                    var initialEquity = equities[ageEquity];
-                                                    // how to calculate equity growth percent?
+                                                    double initialEquity = equities[ageEquity];
+
+                                                    // calculate equity growth percent https://www.wikihow.com/Calculate-Growth-Rate
+                                                    eps = Math.Floor((Math.Pow((currentEquity / initialEquity), (1 / Convert.ToDouble(ageEquity))) - 1) * 100);
+                                                    hasEps = true;
                                                 }
                                             }
+                                        }
+
+                                        if (hasEps)
+                                        {
+                                            break;
                                         }
                                     }
                                 }
@@ -144,6 +157,83 @@ namespace StockPriceValuation
                     }
                 }
 
+            }
+
+            return eps;
+        }
+
+        public double FindSecondEps()
+        {
+            var eps = 0.0;
+            var url = GetSecondEpsUrl(_code);
+            var webResponse = GetWebResponse(url);
+
+            if (!string.IsNullOrEmpty(webResponse))
+            {
+                using (var stream = GenerateStreamFromString(webResponse))
+                {
+                    HtmlAgilityPack.HtmlDocument htmlDoc = new HtmlAgilityPack.HtmlDocument();
+                    htmlDoc.Load(stream, Encoding.UTF8);
+
+                    if (htmlDoc.ParseErrors != null && htmlDoc.ParseErrors.Count() > 0)
+                    {
+                        // Handle any parse errors as required
+                    }
+                    else
+                    {
+                        if (htmlDoc.DocumentNode != null)
+                        {
+                            HtmlAgilityPack.HtmlNode bodyNode = htmlDoc.DocumentNode.SelectSingleNode("//body");
+
+                            if (bodyNode != null)
+                            {
+                                var tdNodes = htmlDoc.DocumentNode.SelectNodes("//span");
+
+                                if (tdNodes != null)
+                                {
+                                    var hasEps = false;
+
+                                    foreach (var node in tdNodes)
+                                    {
+                                        if (node.InnerText == "Next 5 years (per annum)")
+                                        {
+                                            var parentNode = node.ParentNode.ParentNode;
+                                            var childrenNodes = parentNode.SelectNodes("td");
+
+                                            foreach (var childNode in childrenNodes)
+                                            {
+                                                var innerText = childNode.InnerText;
+
+                                                if (!string.IsNullOrEmpty(innerText) && innerText != "Next 5 years (per annum)")
+                                                {
+                                                    innerText = innerText.Replace("%", "");
+                                                    double convertedInnerText;
+
+                                                    if (Double.TryParse(innerText, out convertedInnerText))
+                                                    {
+                                                        eps = Math.Floor(convertedInnerText);
+                                                    }
+
+                                                    hasEps = true;
+
+                                                    if (hasEps)
+                                                    {
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if (hasEps)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             return eps;
@@ -159,9 +249,14 @@ namespace StockPriceValuation
             return stream;
         }
 
-        private string GetEpsUrl(string code)
+        private string GetFirstEpsUrl(string code)
         {
             return string.Concat("https://quotes.wsj.com/", code, "/financials/annual/balance-sheet");
+        }
+
+        private string GetSecondEpsUrl(string code)
+        {
+            return string.Concat("https://au.finance.yahoo.com/quote/", code, "/analysis");
         }
 
         public void FindPeRatio()
