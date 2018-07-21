@@ -9,17 +9,51 @@
     <Window.DataContext>
         <local:StockPriceValuationViewModel/>
     </Window.DataContext>
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition></ColumnDefinition>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition></RowDefinition>
-        </Grid.RowDefinitions>
-        <Button Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="10" Command="{Binding GetPriceToBuyButtonCommand}">Get price to buy</Button>
-        <Label Grid.Column="0" Grid.Row="1" >Price to buy:</Label>
-        <Label Grid.Column="1" Grid.Row="1" Content="{Binding LblPriceToBuyContent, UpdateSourceTrigger=PropertyChanged}"></Label>
-    </Grid>
+    <Window.Resources>
+        <Style x:Key="progressBarStyle" TargetType="ProgressBar">
+            <Setter Property="Width" Value="430" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Minimum" Value="0" />
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="3*" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem>
+                <TextBlock Text="{Binding StatusMessageTextBlock, UpdateSourceTrigger=PropertyChanged}" />
+            </StatusBarItem>
+            <Separator Grid.Column="1" />
+            <StatusBarItem Grid.Column="2">
+                <ProgressBar Style="{StaticResource progressBarStyle}"
+                            Value="{Binding MainProgressValue, UpdateSourceTrigger=PropertyChanged}"
+                            IsIndeterminate="{Binding MainProgressIsIndeterminate, UpdateSourceTrigger=PropertyChanged}"
+                            Maximum="{Binding MainProgressMax, UpdateSourceTrigger=PropertyChanged}" />
+            </StatusBarItem>
+        </StatusBar>
+        <StackPanel Margin="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition></ColumnDefinition>
+                    <ColumnDefinition></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+                <Button Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="10" Command="{Binding GetPriceToBuyButtonCommand}">Get price to buy</Button>
+                <Label Grid.Column="0" Grid.Row="1" >Price to buy:</Label>
+                <Label Grid.Column="1" Grid.Row="1" Content="{Binding LblPriceToBuyContent, UpdateSourceTrigger=PropertyChanged}"></Label>
+            </Grid>
+        </StackPanel>
+    </DockPanel>
 </Window>

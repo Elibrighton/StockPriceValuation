@@ -1,8 +1,12 @@
-﻿using StockPriceValuation.Base;
+﻿using Microsoft.Office.Interop.Excel;
+using StockPriceValuation.Base;
 using StockPriceValuation.Models;
+using StockPriceValuation.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -11,7 +15,10 @@ namespace StockPriceValuation
 {
     public class StockPriceValuationViewModel : ObservableObject
     {
-        private StockPriceValuationModel stockPriceValuation = new StockPriceValuationModel();
+        private StockPriceValuationModel _stockPriceValuation = new StockPriceValuationModel();
+        private int _years;
+        private double _rateOfReturn;
+        private double _marginOfSafety;
 
         private string _lblPriceToBuyContent;
 
@@ -21,8 +28,65 @@ namespace StockPriceValuation
             set
             {
                 _lblPriceToBuyContent = value;
-                stockPriceValuation.PriceToBuyContent = _lblPriceToBuyContent;
+                _stockPriceValuation.PriceToBuyContent = _lblPriceToBuyContent;
                 NotifyPropertyChanged("LblPriceToBuyContent");
+            }
+        }
+
+        private int _mainProgressMax;
+
+        public int MainProgressMax
+        {
+            get { return _mainProgressMax; }
+            set
+            {
+                if (_mainProgressMax != value)
+                {
+                    _mainProgressMax = value;
+                    NotifyPropertyChanged("MainProgressMax");
+                }
+            }
+        }
+
+        private int _mainProgressValue;
+
+        public int MainProgressValue
+        {
+            get { return _mainProgressValue; }
+            set
+            {
+                if (_mainProgressValue != value)
+                {
+                    _mainProgressValue = value;
+                    NotifyPropertyChanged("MainProgressValue");
+                }
+            }
+        }
+
+        private bool _mainProgressIsIndeterminate;
+
+        public bool MainProgressIsIndeterminate
+        {
+            get { return _mainProgressIsIndeterminate; }
+            set
+            {
+                if (_mainProgressIsIndeterminate != value)
+                {
+                    _mainProgressIsIndeterminate = value;
+                    NotifyPropertyChanged("MainProgressIsIndeterminate");
+                }
+            }
+        }
+
+        private string _statusMessageTextBlock;
+
+        public string StatusMessageTextBlock
+        {
+            get { return _statusMessageTextBlock; }
+            set
+            {
+                _statusMessageTextBlock = value;
+                NotifyPropertyChanged("StatusMessageTextBlock");
             }
         }
 
@@ -32,41 +96,121 @@ namespace StockPriceValuation
         {
             LblPriceToBuyContent = "$0";
             GetPriceToBuyButtonCommand = new RelayCommand(OnGetPriceToBuyButtonCommand);
+            ResetMainProgress();
         }
 
         private async void OnGetPriceToBuyButtonCommand(object param)
         {
-            LblPriceToBuyContent = await Task.Run(() => GetStockPriceValuation().ToString());
+            StatusMessageTextBlock = "Downloading spreadsheet";
+            MainProgressIsIndeterminate = true;
+
+            var excel = await Task.Run(() => GetExcel());
+            var range = await Task.Run(() => GetRange(excel));
+
+            MainProgressIsIndeterminate = false;
+            MainProgressMax = range.Rows.Count;
+
+            StatusMessageTextBlock = "Getting ASX companies";
+            var asxCompanies = await Task.Run(() => GetAsxCompanies(excel, range));
+
+            ResetMainProgress();
+            MainProgressMax = asxCompanies.Count();
+            StatusMessageTextBlock = "Getting stock prices";
+
+            foreach (var company in asxCompanies)
+            {
+                var stock = company.Stock;
+
+                await Task.Run(() => GetStockPrice(stock));
+                //await Task.Run(() => GetStockTtmEps(stock));
+                //await Task.Run(() => GetStockEps(stock));
+                //await Task.Run(() => GetStockPeRatio(stock));
+                //await Task.Run(() => GetStockValuation(stock));
+
+                MainProgressValue++;
+            }
         }
 
-        public string GetStockPriceValuation()
+        public Excel GetExcel()
         {
-            var stock = GetStock();
+            var url = "https://www.asx.com.au/asx/research/ASXListedCompanies.csv";
+            var path = string.Concat(Path.GetTempPath(), @"\ASXListedCompanies.csv");
 
-            var stockPriceValuation = 0.0;
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
 
-            var valuation = new Valuation(stock);
-            valuation.Years = 10;
-            valuation.RateOfReturn = 0.15; // 15%
-            valuation.MarginOfSafety = 0.50; // 50%
-            stockPriceValuation = valuation.ValueStockPrice();
+            // download spreadsheet 
+            using (var memoryStream = Web.GetStream(url))
+            {
+                var excel = new Excel(path);
 
-            return string.Concat("$", Math.Round(valuation.ValueStockPrice()));
+                // write stream to file
+                using (var fileStream = File.Create(path))
+                {
+                    memoryStream.CopyTo(fileStream);
+                }
+
+                return excel;
+            }
         }
 
-        public Stock GetStock()
+        public Range GetRange(Excel excel)
         {
-            var stock = new Stock("Facebook, Inc.", "FB");
-            //{
-            //    TtmEps = 6.04,
-            //    Eps = 0.2362,
-            //    PeRation = 19.375
-            //};
-            stock.FindTtmEps();
-            stock.FindEps();
-            stock.FindPeRatio();
+            return excel.GetRange();
+        }
 
-            return stock;
+        public List<Company> GetAsxCompanies(Excel excel, Range range)
+        {
+            var asxCompanies = new List<Company>();
+
+            for (var i = 3; i < range.Rows.Count; i++)
+            {
+                var asxCompany = new Company();
+                asxCompany.Name = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value;
+                asxCompany.Stock = new Stock();
+                asxCompany.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
+                asxCompany.Industry = Company.GetIndustry((string)(excel.Worksheet.Cells[i + 1, 3] as Range).Value);
+                asxCompanies.Add(asxCompany);
+                MainProgressValue++;
+            }
+
+            excel.Close();
+
+            return asxCompanies;
+        }
+
+        public void GetStockPrice(Stock stock)
+        {
+            stock.GetPrice();
+        }
+
+        public void GetStockTtmEps(Stock stock)
+        {
+            stock.GetTtmEps();
+        }
+
+        public void GetStockEps(Stock stock)
+        {
+            stock.GetEps();
+        }
+
+        public void GetStockPeRatio(Stock stock)
+        {
+            stock.GetPeRatio();
+        }
+
+        public void GetStockValuation(Stock stock)
+        {
+            stock.Valuation = new Valuation(stock, _years, _rateOfReturn, _marginOfSafety);
+            stock.Valuation.GetValuation();
+        }
+
+        private void ResetMainProgress()
+        {
+            MainProgressValue = 0;
+            MainProgressMax = 1;
         }
     }
 }

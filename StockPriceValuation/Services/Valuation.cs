@@ -9,29 +9,30 @@ namespace StockPriceValuation
     public class Valuation
     {
         private Stock _stock;
+        private int _years;
+        private double _rateOfReturn;
+        private double _marginOfSafetly;
 
-        public int Years { get; set; }
-        public double RateOfReturn { get; set; }
-        public double MarginOfSafety { get; set; }
+        public double FairPrice { get; set; }
+        public double BuyPrice { get; set; }
 
-        public Valuation (Stock stock)
+        public Valuation (Stock stock, int years, double rateOfReturn, double marginOfSafety)
         {
             _stock = stock;
+            _years = years;
+            _rateOfReturn = rateOfReturn;
+            _marginOfSafetly = marginOfSafety;
         }
 
-        public double ValueStockPrice()
+        public void GetValuation()
         {
-            var stockPriceValue = 0.0;
-
-            var epsIn10Years = EpsIn10Years(_stock.TtmEps, _stock.Eps, Years);
+            var epsIn10Years = EpsIn10Years(_stock.TtmEps, _stock.Eps, _years);
             var sharePriceIn10Years = SharePriceIn10Years(epsIn10Years, _stock.PeRatio);
-            var yearsToDoubleMoney = YearsToDoubleMoney(RateOfReturn);
-            var numberOfYearsToDoubleMoney = NumberOfYearsToDoubleMoney(Years, yearsToDoubleMoney);
-            var priceToBuySharesAtRateOfReturn = PriceToBuySharesAtRateOfReturn(numberOfYearsToDoubleMoney, sharePriceIn10Years);
-            var pricetoBuySharesAtMarginOfSafety = PricetoBuySharesAtMarginOfSafety(priceToBuySharesAtRateOfReturn, MarginOfSafety);
-            stockPriceValue = pricetoBuySharesAtMarginOfSafety;
+            var yearsToDoubleMoney = YearsToDoubleMoney(_rateOfReturn);
+            var numberOfYearsToDoubleMoney = NumberOfYearsToDoubleMoney(_years, yearsToDoubleMoney);
 
-            return stockPriceValue;
+            FairPrice = PriceToBuySharesAtRateOfReturn(numberOfYearsToDoubleMoney, sharePriceIn10Years);
+            BuyPrice = PricetoBuySharesAtMarginOfSafety(FairPrice, _marginOfSafetly);
         }
 
         public double EpsIn10Years(double ttmEps, double eps, double years)
