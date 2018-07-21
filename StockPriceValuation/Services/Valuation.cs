@@ -8,17 +8,18 @@ namespace StockPriceValuation
 {
     public class Valuation
     {
-        private Stock _stock;
         private int _years;
         private double _rateOfReturn;
         private double _marginOfSafetly;
 
         public double FairPrice { get; set; }
         public double BuyPrice { get; set; }
+        public double TtmEps { get; set; }
+        public double Eps { get; set; }
+        public double PeRatio { get; set; }
 
-        public Valuation (Stock stock, int years, double rateOfReturn, double marginOfSafety)
+        public Valuation(int years, double rateOfReturn, double marginOfSafety)
         {
-            _stock = stock;
             _years = years;
             _rateOfReturn = rateOfReturn;
             _marginOfSafetly = marginOfSafety;
@@ -26,13 +27,17 @@ namespace StockPriceValuation
 
         public void GetValuation()
         {
-            var epsIn10Years = EpsIn10Years(_stock.TtmEps, _stock.Eps, _years);
-            var sharePriceIn10Years = SharePriceIn10Years(epsIn10Years, _stock.PeRatio);
+            var epsIn10Years = EpsIn10Years(TtmEps, Eps, _years);
+            var sharePriceIn10Years = SharePriceIn10Years(epsIn10Years, PeRatio);
             var yearsToDoubleMoney = YearsToDoubleMoney(_rateOfReturn);
             var numberOfYearsToDoubleMoney = NumberOfYearsToDoubleMoney(_years, yearsToDoubleMoney);
 
             FairPrice = PriceToBuySharesAtRateOfReturn(numberOfYearsToDoubleMoney, sharePriceIn10Years);
-            BuyPrice = PricetoBuySharesAtMarginOfSafety(FairPrice, _marginOfSafetly);
+
+            if (FairPrice > 0)
+            {
+                BuyPrice = PricetoBuySharesAtMarginOfSafety(FairPrice, _marginOfSafetly);
+            }
         }
 
         public double EpsIn10Years(double ttmEps, double eps, double years)

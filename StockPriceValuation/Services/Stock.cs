@@ -21,8 +21,6 @@ namespace StockPriceValuation
         public bool HasPeRatio { get; set; }
         public double Price { get; set; }
         public bool HasPrice { get; set; }
-        public double FairPrice { get; set; }
-        public double BuyPrice { get; set; }
         public Valuation Valuation { get; set; }
         public Exchange StockExchange { get; set; }
 

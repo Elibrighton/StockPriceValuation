@@ -97,6 +97,9 @@ namespace StockPriceValuation
             LblPriceToBuyContent = "$0";
             GetPriceToBuyButtonCommand = new RelayCommand(OnGetPriceToBuyButtonCommand);
             ResetMainProgress();
+            _years = 10;
+            _rateOfReturn = 0.15; // 15%
+            _marginOfSafety = 0.50; // 50%
         }
 
         private async void OnGetPriceToBuyButtonCommand(object param)
@@ -125,7 +128,11 @@ namespace StockPriceValuation
                 await Task.Run(() => GetStockTtmEps(stock));
                 await Task.Run(() => GetStockEps(stock));
                 await Task.Run(() => GetStockPeRatio(stock));
-                //await Task.Run(() => GetStockValuation(stock));
+
+                if (stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
+                {
+                    await Task.Run(() => GetStockValuation(stock));
+                }
 
                 MainProgressValue++;
             }
@@ -204,7 +211,10 @@ namespace StockPriceValuation
 
         public void GetStockValuation(Stock stock)
         {
-            stock.Valuation = new Valuation(stock, _years, _rateOfReturn, _marginOfSafety);
+            stock.Valuation = new Valuation(_years, _rateOfReturn, _marginOfSafety);
+            stock.Valuation.TtmEps = stock.TtmEps;
+            stock.Valuation.Eps = stock.Eps;
+            stock.Valuation.PeRatio = stock.PeRatio;
             stock.Valuation.GetValuation();
         }
 
