@@ -122,8 +122,8 @@ namespace StockPriceValuation
                 var stock = company.Stock;
 
                 await Task.Run(() => GetStockPrice(stock));
-                //await Task.Run(() => GetStockTtmEps(stock));
-                //await Task.Run(() => GetStockEps(stock));
+                await Task.Run(() => GetStockTtmEps(stock));
+                await Task.Run(() => GetStockEps(stock));
                 //await Task.Run(() => GetStockPeRatio(stock));
                 //await Task.Run(() => GetStockValuation(stock));
 
@@ -171,6 +171,7 @@ namespace StockPriceValuation
                 asxCompany.Name = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value;
                 asxCompany.Stock = new Stock();
                 asxCompany.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
+                asxCompany.Stock.StockExchange = Stock.Exchange.ASX;
                 asxCompany.Industry = Company.GetIndustry((string)(excel.Worksheet.Cells[i + 1, 3] as Range).Value);
                 asxCompanies.Add(asxCompany);
                 MainProgressValue++;

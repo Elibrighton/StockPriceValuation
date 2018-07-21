@@ -14,12 +14,18 @@ namespace StockPriceValuation
     {
         public string Code { get; set; }
         public double TtmEps { get; set; }
+        public bool HasTtmEps { get; set; }
         public double Eps { get; set; }
+        public bool HasEps { get; set; }
         public double PeRatio { get; set; }
+        public bool HasPeRatio { get; set; }
         public double Price { get; set; }
+        public bool HasPrice { get; set; }
         public double FairPrice { get; set; }
         public double BuyPrice { get; set; }
         public Valuation Valuation { get; set; }
+        public Exchange StockExchange { get; set; }
+
 
         public void GetPrice()
         {
@@ -46,8 +52,6 @@ namespace StockPriceValuation
 
                             if (spanNodes != null)
                             {
-                                var hasPrice = false;
-
                                 foreach (var node in spanNodes)
                                 {
                                     if (node.InnerText == "Ask")
@@ -75,13 +79,13 @@ namespace StockPriceValuation
                                                             if (Double.TryParse(innerText.Replace(" x 0", ""), out convertedInnerText))
                                                             {
                                                                 Price = convertedInnerText;
-                                                                hasPrice = true;
+                                                                HasPrice = true;
                                                                 break;
                                                             }
                                                         }
                                                     }
 
-                                                    if (hasPrice)
+                                                    if (HasPrice)
                                                     {
                                                         break;
                                                     }
@@ -90,7 +94,7 @@ namespace StockPriceValuation
                                         }
                                     }
 
-                                    if (hasPrice)
+                                    if (HasPrice)
                                     {
                                         break;
                                     }
@@ -127,50 +131,61 @@ namespace StockPriceValuation
 
                             if (spanNodes != null)
                             {
-                                var hasTtmEps = false;
+                                var hasFoundSymbol = true;
 
                                 foreach (var node in spanNodes)
                                 {
-                                    if (node.InnerText == "EPS (TTM)")
+                                    if (node.InnerText == string.Concat("Symbols similar to '"))
                                     {
-                                        var parentNode = node.ParentNode.ParentNode;
+                                        hasFoundSymbol = false;
+                                    }
+                                }
 
-                                        if (parentNode.Name == "tr")
+                                if (hasFoundSymbol)
+                                {
+                                    foreach (var node in spanNodes)
+                                    {
+                                        if (node.InnerText == "EPS (TTM)")
                                         {
-                                            var childrenNodes = parentNode.SelectNodes("td");
+                                            var parentNode = node.ParentNode.ParentNode;
 
-                                            foreach (var childNode in childrenNodes)
+                                            if (parentNode.Name == "tr")
                                             {
-                                                var childSpanNodes = childNode.SelectNodes("span");
+                                                var childrenNodes = parentNode.SelectNodes("td");
 
-                                                foreach (var childTwoNode in childSpanNodes)
+                                                foreach (var childNode in childrenNodes)
                                                 {
-                                                    var innerText = childTwoNode.InnerText;
+                                                    var childSpanNodes = childNode.SelectNodes("span");
 
-                                                    if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("EPS (TTM)"))
+                                                    foreach (var childTwoNode in childSpanNodes)
                                                     {
-                                                        double convertedInnerText;
+                                                        var innerText = childTwoNode.InnerText;
 
-                                                        if (Double.TryParse(innerText, out convertedInnerText))
+                                                        if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("EPS (TTM)"))
                                                         {
-                                                            TtmEps = convertedInnerText;
-                                                            hasTtmEps = true;
-                                                            break;
+                                                            double convertedInnerText;
+
+                                                            if (Double.TryParse(innerText, out convertedInnerText))
+                                                            {
+                                                                TtmEps = convertedInnerText;
+                                                                HasTtmEps = true;
+                                                                break;
+                                                            }
                                                         }
                                                     }
-                                                }
 
-                                                if (hasTtmEps)
-                                                {
-                                                    break;
+                                                    if (HasTtmEps)
+                                                    {
+                                                        break;
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
 
-                                    if (hasTtmEps)
-                                    {
-                                        break;
+                                        if (HasTtmEps)
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -182,7 +197,14 @@ namespace StockPriceValuation
 
         private string GetTtmEpsUrl(string code)
         {
-            return string.Concat("https://au.finance.yahoo.com/quote/", code);
+            var url = string.Concat("https://au.finance.yahoo.com/quote/", code);
+
+            if (StockExchange == Exchange.ASX)
+            {
+                url = string.Concat(url, ".AX");
+            }
+
+            return url;
         }
 
         private string GetPriceUrl(string code)
@@ -195,12 +217,25 @@ namespace StockPriceValuation
             var epsFirst = GetFirstEps();
             var epsSecond = GetSecondEps();
 
-            Eps = epsFirst < epsSecond ? epsFirst : epsSecond;
+            if (epsSecond.HasValue && epsFirst.HasValue)
+            {
+                Eps = epsFirst.Value < epsSecond.Value ? epsFirst.Value : epsSecond.Value;
+            }
+            else if (epsFirst.HasValue)
+            {
+                Eps = epsFirst.Value;
+            }
+            else if (epsSecond.HasValue)
+            {
+                Eps = epsSecond.Value;
+            }
+
+            HasEps = epsFirst.HasValue || epsSecond.HasValue;
         }
 
-        private double GetFirstEps()
+        private ValueSet GetFirstEps()
         {
-            var eps = 0.0;
+            var valueSet = new ValueSet();
             var url = GetFirstEpsUrl(Code);
 
             using (var stream = Web.GetStream(url))
@@ -224,8 +259,6 @@ namespace StockPriceValuation
 
                             if (tdNodes != null)
                             {
-                                var hasEps = false;
-
                                 foreach (var node in tdNodes)
                                 {
                                     if (node.InnerText == "Total Equity")
@@ -233,7 +266,7 @@ namespace StockPriceValuation
                                         var parentNode = node.ParentNode;
                                         if (parentNode.Name == "tr")
                                         {
-                                            var equities = new List<int>();
+                                            var equities = new List<double>();
                                             var childrenNodes = parentNode.SelectNodes("td");
 
                                             foreach (var childNode in childrenNodes)
@@ -242,8 +275,13 @@ namespace StockPriceValuation
 
                                                 if (!string.IsNullOrWhiteSpace(innerText) && innerText != "Total Equity")
                                                 {
-                                                    var text = innerText.Replace(",", "");
-                                                    equities.Add(Convert.ToInt32(text));
+                                                    innerText = innerText.Replace(",", "");
+                                                    double convertedInnerText;
+
+                                                    if (Double.TryParse(innerText, out convertedInnerText))
+                                                    {
+                                                        equities.Add(convertedInnerText);
+                                                    }
                                                 }
                                             }
 
@@ -254,13 +292,13 @@ namespace StockPriceValuation
                                                 double initialEquity = equities[ageEquity];
 
                                                 // calculate equity growth percent https://www.wikihow.com/Calculate-Growth-Rate
-                                                eps = Math.Pow((currentEquity / initialEquity), (1 / Convert.ToDouble(ageEquity))) - 1;
-                                                hasEps = true;
+                                                valueSet.Value = Math.Pow((currentEquity / initialEquity), (1 / Convert.ToDouble(ageEquity))) - 1;
+                                                valueSet.HasValue = true;
                                             }
                                         }
                                     }
 
-                                    if (hasEps)
+                                    if (valueSet.HasValue)
                                     {
                                         break;
                                     }
@@ -271,12 +309,12 @@ namespace StockPriceValuation
                 }
             }
 
-            return eps;
+            return valueSet;
         }
 
-        public double GetSecondEps()
+        public ValueSet GetSecondEps()
         {
-            var eps = 0.0;
+            var valueSet = new ValueSet();
             var url = GetSecondEpsUrl(Code);
 
             using (var stream = Web.GetStream(url))
@@ -300,38 +338,49 @@ namespace StockPriceValuation
 
                             if (spanNodes != null)
                             {
-                                var hasEps = false;
+                                var hasFoundSymbol = true;
 
                                 foreach (var node in spanNodes)
                                 {
-                                    if (node.InnerText == "Next 5 years (per annum)")
+                                    if (node.InnerText == string.Concat("Symbols similar to '"))
                                     {
-                                        var parentNode = node.ParentNode.ParentNode;
-                                        var childrenNodes = parentNode.SelectNodes("td");
+                                        hasFoundSymbol = false;
+                                    }
+                                }
 
-                                        foreach (var childNode in childrenNodes)
+                                if (hasFoundSymbol)
+                                {
+                                    foreach (var node in spanNodes)
+                                    {
+                                        if (node.InnerText == "Next 5 years (per annum)")
                                         {
-                                            var innerText = childNode.InnerText;
+                                            var parentNode = node.ParentNode.ParentNode;
+                                            var childrenNodes = parentNode.SelectNodes("td");
 
-                                            if (!string.IsNullOrEmpty(innerText) && innerText != "Next 5 years (per annum)")
+                                            foreach (var childNode in childrenNodes)
                                             {
-                                                innerText = innerText.Replace("%", "");
-                                                double convertedInnerText;
+                                                var innerText = childNode.InnerText;
 
-                                                if (Double.TryParse(innerText, out convertedInnerText))
+                                                if (!string.IsNullOrEmpty(innerText) && innerText != "Next 5 years (per annum)")
                                                 {
-                                                    eps = convertedInnerText / 100;
-                                                }
+                                                    innerText = innerText.Replace("%", "");
+                                                    double convertedInnerText;
 
-                                                hasEps = true;
-                                                break;
+                                                    if (Double.TryParse(innerText, out convertedInnerText))
+                                                    {
+                                                        valueSet.Value = convertedInnerText / 100;
+                                                        valueSet.HasValue = true;
+                                                        break;
+                                                    }
+
+                                                }
                                             }
                                         }
-                                    }
 
-                                    if (hasEps)
-                                    {
-                                        break;
+                                        if (valueSet.HasValue)
+                                        {
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -340,17 +389,39 @@ namespace StockPriceValuation
                 }
             }
 
-            return eps;
+            return valueSet;
         }
 
         private string GetFirstEpsUrl(string code)
         {
-            return string.Concat("https://quotes.wsj.com/", code, "/financials/annual/balance-sheet");
+            var url = string.Empty;
+
+            if (StockExchange == Exchange.ASX)
+            {
+                url = string.Concat("https://quotes.wsj.com/AU/XASX/", code, "/financials/annual/balance-sheet");
+            }
+            else
+            {
+                url = string.Concat("https://quotes.wsj.com/", code, "/financials/annual/balance-sheet");
+            }
+
+            return url;
         }
 
         private string GetSecondEpsUrl(string code)
         {
-            return string.Concat("https://au.finance.yahoo.com/quote/", code, "/analysis");
+            var url = string.Empty;
+
+            if (StockExchange == Exchange.ASX)
+            {
+                url = string.Concat("https://au.finance.yahoo.com/quote/", code, ".AX/analysis");
+            }
+            else
+            {
+                url = string.Concat("https://au.finance.yahoo.com/quote/", code, "/analysis");
+            }
+
+            return url;
         }
 
         private string GetSecondPeRatioUrl(string code)
@@ -363,17 +434,36 @@ namespace StockPriceValuation
             var firstPeRation = GetFirstPeRatio();
             var secondPeRation = GetSecondPeRatio();
 
-            PeRatio = firstPeRation < secondPeRation ? firstPeRation : secondPeRation;
+            //PeRatio = firstPeRation < secondPeRation ? firstPeRation : secondPeRation;
+
+            if (secondPeRation.HasValue && firstPeRation.HasValue)
+            {
+                Eps = firstPeRation.Value < secondPeRation.Value ? firstPeRation.Value : secondPeRation.Value;
+            }
+            else if (firstPeRation.HasValue)
+            {
+                Eps = firstPeRation.Value;
+            }
+            else if (secondPeRation.HasValue)
+            {
+                Eps = secondPeRation.Value;
+            }
+
+            HasPeRatio = HasEps || secondPeRation.HasValue;
         }
 
-        public double GetFirstPeRatio()
+        public ValueSet GetFirstPeRatio()
         {
-            return (Eps * 100) * 2;
+            var valueSet = new ValueSet();
+            valueSet.Value = (Eps * 100) * 2;
+            valueSet.HasValue = HasEps;
+
+            return valueSet;
         }
 
-        public double GetSecondPeRatio()
+        public ValueSet GetSecondPeRatio()
         {
-            var peRatio = 0.0;
+            var valueSet = new ValueSet();
             var highPeRatio = 0.0;
             var lowPeRatio = 0.0;
             var url = GetSecondPeRatioUrl(Code);
@@ -472,7 +562,8 @@ namespace StockPriceValuation
                                     if (hasHighPeRatio && hasLowPeRatio)
                                     {
                                         // return average of high and low pe ratio
-                                        peRatio = (highPeRatio + lowPeRatio) / 2;
+                                        valueSet.Value = (highPeRatio + lowPeRatio) / 2;
+                                        valueSet.HasValue = true;
                                         break;
                                     }
                                 }
@@ -482,7 +573,12 @@ namespace StockPriceValuation
                 }
             }
 
-            return peRatio;
+            return valueSet;
+        }
+
+        public enum Exchange
+        {
+            ASX
         }
     }
 }

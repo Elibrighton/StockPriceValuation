@@ -67,6 +67,7 @@
     <Compile Include="Services\Company.cs" />
     <Compile Include="Services\Excel.cs" />
     <Compile Include="Services\Stock.cs" />
+    <Compile Include="Services\ValueSet.cs" />
     <Compile Include="Services\Web.cs" />
     <Compile Include="ViewModels\StockPriceValuationViewModel.cs" />
     <Compile Include="Services\Valuation.cs" />
