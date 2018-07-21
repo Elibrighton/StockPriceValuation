@@ -426,7 +426,18 @@ namespace StockPriceValuation
 
         private string GetSecondPeRatioUrl(string code)
         {
-            return string.Concat("https://www.msn.com/en-au/money/stockdetails/analysis/fi-126.1.", code, ".NAS");
+            var url = string.Empty;
+
+            if (StockExchange == Exchange.ASX)
+            {
+                url = string.Concat("https://www.msn.com/en-au/money/stockdetails/analysis/fi-146.1.", code, ".ASX");
+            }
+            else
+            {
+                url = string.Concat("https://www.msn.com/en-au/money/stockdetails/analysis/fi-126.1.", code, ".NAS");
+            }
+
+            return url;
         }
 
         public void GetPeRatio()
@@ -438,18 +449,18 @@ namespace StockPriceValuation
 
             if (secondPeRation.HasValue && firstPeRation.HasValue)
             {
-                Eps = firstPeRation.Value < secondPeRation.Value ? firstPeRation.Value : secondPeRation.Value;
+                PeRatio = firstPeRation.Value < secondPeRation.Value ? firstPeRation.Value : secondPeRation.Value;
             }
             else if (firstPeRation.HasValue)
             {
-                Eps = firstPeRation.Value;
+                PeRatio = firstPeRation.Value;
             }
             else if (secondPeRation.HasValue)
             {
-                Eps = secondPeRation.Value;
+                PeRatio = secondPeRation.Value;
             }
 
-            HasPeRatio = HasEps || secondPeRation.HasValue;
+            HasPeRatio = firstPeRation.HasValue || secondPeRation.HasValue;
         }
 
         public ValueSet GetFirstPeRatio()

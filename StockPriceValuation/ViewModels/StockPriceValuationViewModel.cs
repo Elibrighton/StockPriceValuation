@@ -124,7 +124,7 @@ namespace StockPriceValuation
                 await Task.Run(() => GetStockPrice(stock));
                 await Task.Run(() => GetStockTtmEps(stock));
                 await Task.Run(() => GetStockEps(stock));
-                //await Task.Run(() => GetStockPeRatio(stock));
+                await Task.Run(() => GetStockPeRatio(stock));
                 //await Task.Run(() => GetStockValuation(stock));
 
                 MainProgressValue++;
