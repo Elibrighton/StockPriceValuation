@@ -601,7 +601,9 @@ namespace StockPriceValuation
 
         public enum Exchange
         {
-            ASX
+            ASX,
+            NYSE,
+            NASDAQ
         }
     }
 }

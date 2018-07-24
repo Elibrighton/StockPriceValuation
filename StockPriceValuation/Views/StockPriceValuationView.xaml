@@ -49,7 +49,19 @@
                     <RowDefinition></RowDefinition>
                     <RowDefinition></RowDefinition>
                 </Grid.RowDefinitions>
-                <Button Grid.Column="0" Grid.Row="0" Margin="10" Command="{Binding GetPriceToBuyButtonCommand}">Get price to buy</Button>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition></RowDefinition>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Column="0" Grid.Row="0" Margin="10" Command="{Binding CheckAsxButtonCommand}">Check ASX</Button>
+                    <Button Grid.Column="1" Grid.Row="0" Margin="10" Command="{Binding CheckNyseButtonCommand}">Check NYSE</Button>
+                    <Button Grid.Column="2" Grid.Row="0" Margin="10" Command="{Binding CheckNasdaqButtonCommand}">Check NASDAQ</Button>
+                </Grid>
                 <ListView Grid.Column="0" 
                           Grid.Row="1" 
                           Margin="10" 
@@ -59,12 +71,12 @@
                           SelectionMode="Single">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Company" DisplayMemberBinding="{Binding Name}"  />
-                            <GridViewColumn Header="Code" DisplayMemberBinding="{Binding Stock.Code}" />
-                            <GridViewColumn Header="Price" DisplayMemberBinding="{Binding Stock.Price}" />
-                            <GridViewColumn Header="Fair price" DisplayMemberBinding="{Binding Stock.Valuation.FairPrice}" />
-                            <GridViewColumn Header="Buy price" DisplayMemberBinding="{Binding Stock.Valuation.BuyPrice}" />
-                            <GridViewColumn Header="Decision" DisplayMemberBinding="{Binding Stock.Decision}" />
+                            <GridViewColumn Header="Company" Width="300" DisplayMemberBinding="{Binding Name}"  />
+                            <GridViewColumn Header="Code" Width="100" DisplayMemberBinding="{Binding Stock.Code}" />
+                            <GridViewColumn Header="Price" Width="100" DisplayMemberBinding="{Binding Stock.Price}" />
+                            <GridViewColumn Header="Fair price" Width="100" DisplayMemberBinding="{Binding Stock.Valuation.FairPrice}" />
+                            <GridViewColumn Header="Buy price" Width="100" DisplayMemberBinding="{Binding Stock.Valuation.BuyPrice}" />
+                            <GridViewColumn Header="Decision" Width="100" DisplayMemberBinding="{Binding Stock.Decision}" />
                         </GridView>
                     </ListView.View>
                 </ListView>

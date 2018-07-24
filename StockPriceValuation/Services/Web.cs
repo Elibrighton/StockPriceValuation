@@ -29,7 +29,7 @@ namespace StockPriceValuation.Services
                     response.Close();
                     attempts = 0;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     attempts--;
                 }

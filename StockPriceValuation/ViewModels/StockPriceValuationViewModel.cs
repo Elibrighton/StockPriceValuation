@@ -17,9 +17,6 @@ namespace StockPriceValuation
     public class StockPriceValuationViewModel : ObservableObject
     {
         private StockPriceValuationModel _stockPriceValuation = new StockPriceValuationModel();
-        private int _years;
-        private double _rateOfReturn;
-        private double _marginOfSafety;
 
         private int _mainProgressMax;
 
@@ -90,35 +87,47 @@ namespace StockPriceValuation
             }
         }
 
-        public ICommand GetPriceToBuyButtonCommand { get; set; }
+        public ICommand CheckAsxButtonCommand { get; set; }
+        public ICommand CheckNyseButtonCommand { get; set; }
+        public ICommand CheckNasdaqButtonCommand { get; set; }
 
         public StockPriceValuationViewModel()
         {
-            GetPriceToBuyButtonCommand = new RelayCommand(OnGetPriceToBuyButtonCommand);
+            CheckAsxButtonCommand = new RelayCommand(OnCheckAsxButtonCommand);
+            CheckNyseButtonCommand = new RelayCommand(OnCheckNyseButtonCommand);
+            CheckNasdaqButtonCommand = new RelayCommand(OnCheckNasdaqButtonCommand);
             ResetMainProgress();
-            _years = 10;
-            _rateOfReturn = 0.15; // 15%
-            _marginOfSafety = 0.50; // 50%
+            _stockPriceValuation.Years = 10;
+            _stockPriceValuation.RateOfReturn = 0.15; // 15%
+            _stockPriceValuation.MarginOfSafety = 0.50; // 50%
             ListOfCompanies = new ObservableCollection<Company>();
+
         }
 
-        private async void OnGetPriceToBuyButtonCommand(object param)
+        private async void OnCheckAsxButtonCommand(object param)
         {
             StatusMessageTextBlock = "Downloading spreadsheet";
             MainProgressIsIndeterminate = true;
 
-            var excel = await Task.Run(() => GetExcel());
-            var range = await Task.Run(() => GetRange(excel));
+            var filename = "ASXListedCompanies.csv";
+            var url = string.Concat("https://www.asx.com.au/asx/research/", filename);
+
+            var excel = await Task.Run(() => GetExcel(url, filename));
+
+            var firstUsedRow = 4;
+            var firstUsedColumn = 1;
+
+            var range = await Task.Run(() => GetRange(excel, firstUsedRow, firstUsedColumn));
 
             MainProgressIsIndeterminate = false;
             MainProgressMax = range.Rows.Count;
 
             StatusMessageTextBlock = "Getting ASX companies";
-            var asxCompanies = await Task.Run(() => GetAsxCompanies(excel, range));
+            var asxCompanies = await Task.Run(() => GetAsxCompanies(excel, range, firstUsedRow));
 
             ResetMainProgress();
             MainProgressMax = asxCompanies.Count();
-            StatusMessageTextBlock = "Getting stock prices";
+            StatusMessageTextBlock = "Valuating stock prices";
 
             foreach (var company in asxCompanies)
             {
@@ -157,11 +166,40 @@ namespace StockPriceValuation
             StatusMessageTextBlock = "Finished update";
             ResetMainProgress();
         }
-
-        public Excel GetExcel()
+        private async void OnCheckNyseButtonCommand(object param)
         {
-            var url = "https://www.asx.com.au/asx/research/ASXListedCompanies.csv";
-            var path = string.Concat(Path.GetTempPath(), @"\ASXListedCompanies.csv");
+            StatusMessageTextBlock = "Downloading spreadsheet";
+            MainProgressIsIndeterminate = true;
+
+            var filename = "companylist.csv";
+            var url = "https://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE&render=download";
+
+            var excel = await Task.Run(() => GetExcel(url, filename));
+
+            var firstUsedRow = 2;
+            var firstUsedColumn = 1;
+
+            var range = await Task.Run(() => GetRange(excel, firstUsedRow, firstUsedColumn));
+
+            MainProgressIsIndeterminate = false;
+            MainProgressMax = range.Rows.Count;
+
+            StatusMessageTextBlock = "Getting NYSE companies";
+            var nyseCompanies = await Task.Run(() => GetNyseCompanies(excel, range, firstUsedRow));
+
+            ResetMainProgress();
+            MainProgressMax = nyseCompanies.Count();
+            StatusMessageTextBlock = "Valuating stock prices";
+        }
+
+        private async void OnCheckNasdaqButtonCommand(object param)
+        {
+
+        }
+
+        public Excel GetExcel(string url, string filename)
+        {
+            var path = string.Concat(Path.GetTempPath(), @"\", filename);
 
             if (File.Exists(path))
             {
@@ -183,30 +221,73 @@ namespace StockPriceValuation
             }
         }
 
-        public Range GetRange(Excel excel)
+        public Range GetRange(Excel excel, int firstUsedRow, int firstUsedColumn)
         {
-            return excel.GetRange();
+            return excel.GetRange(firstUsedRow, firstUsedColumn);
         }
 
-        public ObservableCollection<Company> GetAsxCompanies(Excel excel, Range range)
+        public ObservableCollection<Company> GetAsxCompanies(Excel excel, Range range, int firstUsedRow)
         {
-            var asxCompanies = new ObservableCollection<Company>();
+            var companies = new ObservableCollection<Company>();
 
-            for (var i = 3; i < range.Rows.Count; i++)
+            for (var i = firstUsedRow - 1; i < range.Rows.Count; i++)
             {
-                var asxCompany = new Company();
-                asxCompany.Name = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value;
-                asxCompany.Stock = new Stock();
-                asxCompany.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
-                asxCompany.Stock.StockExchange = Stock.Exchange.ASX;
-                asxCompany.Industry = Company.GetIndustry((string)(excel.Worksheet.Cells[i + 1, 3] as Range).Value);
-                asxCompanies.Add(asxCompany);
+                var company = new Company();
+                company.Name = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value;
+                company.Stock = new Stock();
+                company.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
+                company.Stock.StockExchange = Stock.Exchange.ASX;
+                var industry = (string)(excel.Worksheet.Cells[i + 1, 3] as Range).Value;
+
+                if (!_stockPriceValuation.Industries.Contains(industry))
+                {
+                    _stockPriceValuation.Industries.Add(industry);
+                }
+
+                company.Industry = industry;
+                companies.Add(company);
                 MainProgressValue++;
             }
 
             excel.Close();
 
-            return asxCompanies;
+            return companies;
+        }
+
+        public ObservableCollection<Company> GetNyseCompanies(Excel excel, Range range, int firstUsedRow)
+        {
+            var companies = new ObservableCollection<Company>();
+
+            for (var i = firstUsedRow - 1; i < range.Rows.Count; i++)
+            {
+                var company = new Company();
+                company.Name = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
+                company.Stock = new Stock();
+                company.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value;
+                company.Stock.StockExchange = Stock.Exchange.NYSE;
+                var industry = (string)(excel.Worksheet.Cells[i + 1, 8] as Range).Value;
+
+                if (!_stockPriceValuation.Industries.Contains(industry))
+                {
+                    _stockPriceValuation.Industries.Add(industry);
+                }
+
+                company.Industry = industry;
+                var sector = (string)(excel.Worksheet.Cells[i + 1, 7] as Range).Value;
+
+                if (!_stockPriceValuation.Sectors.Contains(sector))
+                {
+                    _stockPriceValuation.Sectors.Add(sector);
+                }
+
+                company.Sector = sector;
+                companies.Add(company);
+                MainProgressValue++;
+            }
+
+            excel.Close();
+
+            return companies;
         }
 
         public void GetStockPrice(Stock stock)
@@ -231,7 +312,7 @@ namespace StockPriceValuation
 
         public void GetStockValuation(Stock stock)
         {
-            stock.Valuation = new Valuation(_years, _rateOfReturn, _marginOfSafety);
+            stock.Valuation = new Valuation(_stockPriceValuation.Years, _stockPriceValuation.RateOfReturn, _stockPriceValuation.MarginOfSafety);
             stock.Valuation.TtmEps = stock.TtmEps;
             stock.Valuation.Eps = stock.Eps;
             stock.Valuation.PeRatio = stock.PeRatio;

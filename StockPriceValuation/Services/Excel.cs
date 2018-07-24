@@ -23,7 +23,7 @@ namespace StockPriceValuation.Services
             _Excel = new Application();
         }
 
-        public Range GetRange()
+        public Range GetRange(int firstUsedRow, int firstUsedColumn)
         {
             // open spreadsheet
             _Excel = new Application();
