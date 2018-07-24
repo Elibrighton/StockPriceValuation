@@ -23,7 +23,7 @@ namespace StockPriceValuation
         public bool HasPrice { get; set; }
         public Valuation Valuation { get; set; }
         public Exchange StockExchange { get; set; }
-
+        public string Decision { get; set; }
 
         public void GetPrice()
         {
@@ -228,7 +228,7 @@ namespace StockPriceValuation
                 Eps = epsSecond.Value;
             }
 
-            HasEps = epsFirst.HasValue || epsSecond.HasValue;
+            HasEps = epsFirst.HasValue && epsSecond.HasValue;
         }
 
         private ValueSet GetFirstEps()
@@ -458,7 +458,7 @@ namespace StockPriceValuation
                 PeRatio = secondPeRation.Value;
             }
 
-            HasPeRatio = firstPeRation.HasValue || secondPeRation.HasValue;
+            HasPeRatio = firstPeRation.HasValue && secondPeRation.HasValue;
         }
 
         public ValueSet GetFirstPeRatio()
@@ -583,6 +583,20 @@ namespace StockPriceValuation
             }
 
             return valueSet;
+        }
+
+        public void GetDecision()
+        {
+            if (Price > 0
+                && Valuation.BuyPrice > 0
+                && Valuation.BuyPrice >= Price)
+            {
+                Decision = "Buy";
+            }
+            else
+            {
+                Decision = "Sell";
+            }
         }
 
         public enum Exchange

@@ -4,6 +4,7 @@ using StockPriceValuation.Models;
 using StockPriceValuation.Services;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -19,19 +20,6 @@ namespace StockPriceValuation
         private int _years;
         private double _rateOfReturn;
         private double _marginOfSafety;
-
-        private string _lblPriceToBuyContent;
-
-        public string LblPriceToBuyContent
-        {
-            get { return _lblPriceToBuyContent; }
-            set
-            {
-                _lblPriceToBuyContent = value;
-                _stockPriceValuation.PriceToBuyContent = _lblPriceToBuyContent;
-                NotifyPropertyChanged("LblPriceToBuyContent");
-            }
-        }
 
         private int _mainProgressMax;
 
@@ -90,16 +78,28 @@ namespace StockPriceValuation
             }
         }
 
+        private ObservableCollection<Company> _listOfCompanies;
+
+        public ObservableCollection<Company> ListOfCompanies
+        {
+            get { return _listOfCompanies; }
+            set
+            {
+                _listOfCompanies = value;
+                NotifyPropertyChanged("ListOfCompanies");
+            }
+        }
+
         public ICommand GetPriceToBuyButtonCommand { get; set; }
 
         public StockPriceValuationViewModel()
         {
-            LblPriceToBuyContent = "$0";
             GetPriceToBuyButtonCommand = new RelayCommand(OnGetPriceToBuyButtonCommand);
             ResetMainProgress();
             _years = 10;
             _rateOfReturn = 0.15; // 15%
             _marginOfSafety = 0.50; // 50%
+            ListOfCompanies = new ObservableCollection<Company>();
         }
 
         private async void OnGetPriceToBuyButtonCommand(object param)
@@ -125,17 +125,37 @@ namespace StockPriceValuation
                 var stock = company.Stock;
 
                 await Task.Run(() => GetStockPrice(stock));
-                await Task.Run(() => GetStockTtmEps(stock));
-                await Task.Run(() => GetStockEps(stock));
-                await Task.Run(() => GetStockPeRatio(stock));
 
-                if (stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
+                if (stock.HasPrice)
                 {
-                    await Task.Run(() => GetStockValuation(stock));
+                    await Task.Run(() => GetStockTtmEps(stock));
+
+                    if (stock.HasTtmEps)
+                    {
+                        await Task.Run(() => GetStockEps(stock));
+
+                        if (stock.HasEps)
+                        {
+                            await Task.Run(() => GetStockPeRatio(stock));
+
+                            if (stock.HasPeRatio)
+                            {
+                                await Task.Run(() => GetStockValuation(stock));
+                            }
+                        }
+                    }
                 }
 
                 MainProgressValue++;
+
+                if (stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
+                {
+                    ListOfCompanies.Add(company);
+                }
             }
+
+            StatusMessageTextBlock = "Finished update";
+            ResetMainProgress();
         }
 
         public Excel GetExcel()
@@ -168,9 +188,9 @@ namespace StockPriceValuation
             return excel.GetRange();
         }
 
-        public List<Company> GetAsxCompanies(Excel excel, Range range)
+        public ObservableCollection<Company> GetAsxCompanies(Excel excel, Range range)
         {
-            var asxCompanies = new List<Company>();
+            var asxCompanies = new ObservableCollection<Company>();
 
             for (var i = 3; i < range.Rows.Count; i++)
             {
@@ -216,6 +236,7 @@ namespace StockPriceValuation
             stock.Valuation.Eps = stock.Eps;
             stock.Valuation.PeRatio = stock.PeRatio;
             stock.Valuation.GetValuation();
+            stock.GetDecision();
         }
 
         private void ResetMainProgress()

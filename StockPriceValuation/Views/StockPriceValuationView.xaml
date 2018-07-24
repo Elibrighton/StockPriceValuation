@@ -5,13 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:StockPriceValuation"
         mc:Ignorable="d"
-        Title="Stock Price Valuation" Height="450" Width="800">
+        Title="Stock Price Valuation" Height="450" Width="1000">
     <Window.DataContext>
         <local:StockPriceValuationViewModel/>
     </Window.DataContext>
     <Window.Resources>
         <Style x:Key="progressBarStyle" TargetType="ProgressBar">
-            <Setter Property="Width" Value="430" />
+            <Setter Property="Width" Value="720" />
             <Setter Property="Height" Value="16" />
             <Setter Property="Minimum" Value="0" />
         </Style>
@@ -44,15 +44,30 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition></ColumnDefinition>
-                    <ColumnDefinition></ColumnDefinition>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition></RowDefinition>
                     <RowDefinition></RowDefinition>
                 </Grid.RowDefinitions>
-                <Button Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Margin="10" Command="{Binding GetPriceToBuyButtonCommand}">Get price to buy</Button>
-                <Label Grid.Column="0" Grid.Row="1" >Price to buy:</Label>
-                <Label Grid.Column="1" Grid.Row="1" Content="{Binding LblPriceToBuyContent, UpdateSourceTrigger=PropertyChanged}"></Label>
+                <Button Grid.Column="0" Grid.Row="0" Margin="10" Command="{Binding GetPriceToBuyButtonCommand}">Get price to buy</Button>
+                <ListView Grid.Column="0" 
+                          Grid.Row="1" 
+                          Margin="10" 
+                          ItemsSource="{Binding Path=ListOfCompanies}" 
+                          MinHeight="310"
+                          MaxHeight="310"
+                          SelectionMode="Single">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Header="Company" DisplayMemberBinding="{Binding Name}"  />
+                            <GridViewColumn Header="Code" DisplayMemberBinding="{Binding Stock.Code}" />
+                            <GridViewColumn Header="Price" DisplayMemberBinding="{Binding Stock.Price}" />
+                            <GridViewColumn Header="Fair price" DisplayMemberBinding="{Binding Stock.Valuation.FairPrice}" />
+                            <GridViewColumn Header="Buy price" DisplayMemberBinding="{Binding Stock.Valuation.BuyPrice}" />
+                            <GridViewColumn Header="Decision" DisplayMemberBinding="{Binding Stock.Decision}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
             </Grid>
         </StackPanel>
     </DockPanel>

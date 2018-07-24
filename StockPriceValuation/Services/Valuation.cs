@@ -32,12 +32,8 @@ namespace StockPriceValuation
             var yearsToDoubleMoney = YearsToDoubleMoney(_rateOfReturn);
             var numberOfYearsToDoubleMoney = NumberOfYearsToDoubleMoney(_years, yearsToDoubleMoney);
 
-            FairPrice = PriceToBuySharesAtRateOfReturn(numberOfYearsToDoubleMoney, sharePriceIn10Years);
-
-            if (FairPrice > 0)
-            {
-                BuyPrice = PricetoBuySharesAtMarginOfSafety(FairPrice, _marginOfSafetly);
-            }
+            FairPrice = Math.Round(PriceToBuySharesAtRateOfReturn(numberOfYearsToDoubleMoney, sharePriceIn10Years), 4);
+            BuyPrice = Math.Round(PricetoBuySharesAtMarginOfSafety(FairPrice, _marginOfSafetly), 4);
         }
 
         public double EpsIn10Years(double ttmEps, double eps, double years)

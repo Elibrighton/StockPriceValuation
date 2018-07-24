@@ -12,14 +12,28 @@ namespace StockPriceValuation.Services
     {
         public static string GetWebResponse(string url)
         {
-            var request = WebRequest.Create(url);
-            request.Credentials = CredentialCache.DefaultCredentials;
-            var response = request.GetResponse();
-            var dataStream = response.GetResponseStream();
-            var reader = new StreamReader(dataStream);
-            var responseFromServer = reader.ReadToEnd();
-            reader.Close();
-            response.Close();
+            var attempts = 3;
+            var responseFromServer = string.Empty;
+
+            while (attempts > 0)
+            {
+                try
+                {
+                    var request = WebRequest.Create(url);
+                    request.Credentials = CredentialCache.DefaultCredentials;
+                    var response = request.GetResponse();
+                    var dataStream = response.GetResponseStream();
+                    var reader = new StreamReader(dataStream);
+                    responseFromServer = reader.ReadToEnd();
+                    reader.Close();
+                    response.Close();
+                    attempts = 0;
+                }
+                catch (Exception)
+                {
+                    attempts--;
+                }
+            }
 
             return responseFromServer;
         }
