@@ -9,11 +9,9 @@ using System.Threading.Tasks;
 
 namespace StockPriceValuation.Services
 {
-    public class Company
+    public abstract class Company
     {
         public string Name { get; set; }
         public string Industry { get; set; }
-        public Stock Stock { get; set; }
-        public string Sector { get; set; }
     }
 }

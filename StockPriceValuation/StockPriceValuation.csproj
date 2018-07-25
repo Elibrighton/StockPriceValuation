@@ -64,9 +64,14 @@
     <Compile Include="Base\ObservableObject.cs" />
     <Compile Include="Base\RelayCommand.cs" />
     <Compile Include="Models\StockPriceValuationModel.cs" />
-    <Compile Include="Services\Company.cs" />
+    <Compile Include="Services\Company\AusCompany.cs" />
+    <Compile Include="Services\Company\Company.cs" />
     <Compile Include="Services\Excel.cs" />
-    <Compile Include="Services\Stock.cs" />
+    <Compile Include="Services\Sale.cs" />
+    <Compile Include="Services\Stocks\AusStock.cs" />
+    <Compile Include="Services\Stocks\Stock.cs" />
+    <Compile Include="Services\Company\UsaCompany.cs" />
+    <Compile Include="Services\Stocks\UsaStock.cs" />
     <Compile Include="Services\ValueSet.cs" />
     <Compile Include="Services\Web.cs" />
     <Compile Include="ViewModels\StockPriceValuationViewModel.cs" />

@@ -72,11 +72,14 @@
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="Company" Width="300" DisplayMemberBinding="{Binding Name}"  />
-                            <GridViewColumn Header="Code" Width="100" DisplayMemberBinding="{Binding Stock.Code}" />
-                            <GridViewColumn Header="Price" Width="100" DisplayMemberBinding="{Binding Stock.Price}" />
-                            <GridViewColumn Header="Fair price" Width="100" DisplayMemberBinding="{Binding Stock.Valuation.FairPrice}" />
-                            <GridViewColumn Header="Buy price" Width="100" DisplayMemberBinding="{Binding Stock.Valuation.BuyPrice}" />
-                            <GridViewColumn Header="Decision" Width="100" DisplayMemberBinding="{Binding Stock.Decision}" />
+                            <GridViewColumn Header="Code" Width="75" DisplayMemberBinding="{Binding Stock.Code}" />
+                            <GridViewColumn Header="Price" Width="75" DisplayMemberBinding="{Binding Stock.Price}" />
+                            <GridViewColumn Header="TTM EPS" Width="75" DisplayMemberBinding="{Binding Stock.TtmEps}" />
+                            <GridViewColumn Header="EPS" Width="75" DisplayMemberBinding="{Binding Stock.Eps}" />
+                            <GridViewColumn Header="PE ratio" Width="75" DisplayMemberBinding="{Binding Stock.PeRatio}" />
+                            <GridViewColumn Header="Fair price" Width="75" DisplayMemberBinding="{Binding Stock.Valuation.FairPrice}" />
+                            <GridViewColumn Header="Buy price" Width="75" DisplayMemberBinding="{Binding Stock.Valuation.BuyPrice}" />
+                            <GridViewColumn Header="Decision" Width="75" DisplayMemberBinding="{Binding Stock.Decision}" />
                         </GridView>
                     </ListView.View>
                 </ListView>

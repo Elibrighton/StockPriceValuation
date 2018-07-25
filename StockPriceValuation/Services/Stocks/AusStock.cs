@@ -10,9 +10,8 @@ using System.Threading.Tasks;
 
 namespace StockPriceValuation
 {
-    public class Stock
+    public class AusStock : Stock
     {
-        public string Code { get; set; }
         public double TtmEps { get; set; }
         public bool HasTtmEps { get; set; }
         public double Eps { get; set; }
@@ -22,8 +21,6 @@ namespace StockPriceValuation
         public double Price { get; set; }
         public bool HasPrice { get; set; }
         public Valuation Valuation { get; set; }
-        public Exchange StockExchange { get; set; }
-        public string Decision { get; set; }
 
         public void GetPrice()
         {
@@ -597,13 +594,6 @@ namespace StockPriceValuation
             {
                 Decision = "Sell";
             }
-        }
-
-        public enum Exchange
-        {
-            ASX,
-            NYSE,
-            NASDAQ
         }
     }
 }
