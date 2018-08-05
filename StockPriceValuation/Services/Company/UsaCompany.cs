@@ -8,12 +8,6 @@ namespace StockPriceValuation.Services
 {
     public class UsaCompany : Company
     {
-        public UsaStock Stock { get; set; }
         public string Sector { get; set; }
-
-        public UsaCompany()
-        {
-            Stock = new UsaStock();
-        }
     }
 }

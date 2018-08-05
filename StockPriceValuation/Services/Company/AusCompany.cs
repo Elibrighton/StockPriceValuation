@@ -8,11 +8,5 @@ namespace StockPriceValuation.Services
 {
     public class AusCompany : Company
     {
-        public AusStock Stock { get; set; }
-
-        public AusCompany()
-        {
-            Stock = new AusStock();
-        }
     }
 }

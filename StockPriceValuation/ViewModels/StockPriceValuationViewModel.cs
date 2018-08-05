@@ -133,39 +133,39 @@ namespace StockPriceValuation
             {
                 var stock = company.Stock;
 
-                await Task.Run(() => GetStockPrice(stock));
+                await Task.Run(() => GetYahooFinanceResponse(stock));
 
-                if (stock.HasPrice)
+                if (stock.HasPrice && stock.HasTtmEps && stock.SecondEps.HasValue)
                 {
-                    await Task.Run(() => GetStockTtmEps(stock));
+                    await Task.Run(() => GetWallStreetJournalResponse(stock));
 
-                    if (stock.HasTtmEps)
+                    if (stock.FirstEps.HasValue)
                     {
-                        await Task.Run(() => GetStockEps(stock));
+                        stock.GetEps();
 
-                        if (stock.HasEps)
+                        await Task.Run(() => GetMsnMoneyResponse(stock));
+
+                        if (stock.SecondPeRatio.HasValue)
                         {
-                            await Task.Run(() => GetStockPeRatio(stock));
+                            stock.GetPeRatio();
 
-                            if (stock.HasPeRatio)
-                            {
-                                await Task.Run(() => GetStockValuation(stock));
-                            }
+                            await Task.Run(() => GetStockValuation(stock));
                         }
                     }
                 }
 
                 MainProgressValue++;
 
-                if (stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
-                {
-                    ListOfCompanies.Add(company);
-                }
+                //if (stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
+                //{
+                ListOfCompanies.Add(company);
+                //}
             }
 
             StatusMessageTextBlock = "Finished update";
             ResetMainProgress();
         }
+
         private async void OnCheckNyseButtonCommand(object param)
         {
             var path = @"C:\Users\st3gs\Downloads\companylist.csv";
@@ -191,14 +191,38 @@ namespace StockPriceValuation
                 ResetMainProgress();
                 MainProgressMax = nyseCompanies.Count();
                 StatusMessageTextBlock = "Valuating stock prices";
+
                 foreach (var company in nyseCompanies)
                 {
                     var stock = company.Stock;
 
-                    await Task.Run(() => GetStockSales(stock));
+                    await Task.Run(() => GetYahooFinanceResponse(stock));
+
+                    if (stock.HasPrice && stock.HasTtmEps && stock.SecondEps.HasValue)
+                    {
+                        await Task.Run(() => GetWallStreetJournalResponse(stock));
+
+                        if (stock.FirstEps.HasValue)
+                        {
+                            stock.GetEps();
+
+                            await Task.Run(() => GetMsnMoneyResponse(stock));
+
+                            if (stock.SecondPeRatio.HasValue)
+                            {
+                                stock.GetPeRatio();
+
+                                await Task.Run(() => GetStockValuation(stock));
+                            }
+                        }
+                    }
 
                     MainProgressValue++;
+
+                    //if (stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
+                    //{
                     ListOfCompanies.Add(company);
+                    //}
                 }
 
                 StatusMessageTextBlock = "Finished update";
@@ -206,10 +230,10 @@ namespace StockPriceValuation
             }
             else
             {
-                StatusMessageTextBlock = "Spreadsheet does not exist";
+                StatusMessageTextBlock = "Spreadsheet does not exist. You can download it from 'https://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE'";
             }
         }
-
+        
         private async void OnCheckNasdaqButtonCommand(object param)
         {
 
@@ -284,7 +308,6 @@ namespace StockPriceValuation
             {
                 var company = new UsaCompany();
                 company.Name = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
-                company.Stock = new UsaStock();
                 company.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value;
                 company.Stock.StockExchange = Stock.Exchange.NYSE;
                 var industry = (string)(excel.Worksheet.Cells[i + 1, 8] as Range).Value;
@@ -305,6 +328,7 @@ namespace StockPriceValuation
                 company.Sector = sector;
                 companies.Add(company);
                 MainProgressValue++;
+                //break; // get just first company for debug
             }
 
             excel.Close();
@@ -312,32 +336,32 @@ namespace StockPriceValuation
             return companies;
         }
 
-        public void GetStockSales(UsaStock stock)
+        public void GetYahooFinanceResponse(Stock stock)
         {
-            stock.GetSales();
+            stock.GetYahooFinanceResponse();
         }
 
-        public void GetStockPrice(AusStock stock)
+        public void GetWallStreetJournalResponse(Stock stock)
         {
-            stock.GetPrice();
+            stock.GetWallStreetJournalResponse();
         }
 
-        public void GetStockTtmEps(AusStock stock)
+        public void GetMsnMoneyResponse(Stock stock)
         {
-            stock.GetTtmEps();
+            stock.GetMsnMoneyResponse();
         }
 
-        public void GetStockEps(AusStock stock)
+        public void GetStockEps(Stock stock)
         {
             stock.GetEps();
         }
 
-        public void GetStockPeRatio(AusStock stock)
+        public void GetStockPeRatio(Stock stock)
         {
             stock.GetPeRatio();
         }
 
-        public void GetStockValuation(AusStock stock)
+        public void GetStockValuation(Stock stock)
         {
             stock.Valuation = new Valuation(_stockPriceValuation.Years, _stockPriceValuation.RateOfReturn, _stockPriceValuation.MarginOfSafety);
             stock.Valuation.TtmEps = stock.TtmEps;
