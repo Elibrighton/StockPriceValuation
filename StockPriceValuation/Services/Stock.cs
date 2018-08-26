@@ -499,6 +499,8 @@ namespace StockPriceValuation.Services
 
         public void GetPeRatio()
         {
+            GetFirstPeRatio();
+
             if (SecondPeRatio.HasValue && FirstPeRatio.HasValue)
             {
                 PeRatio = FirstPeRatio.Value < SecondPeRatio.Value ? FirstPeRatio.Value : SecondPeRatio.Value;

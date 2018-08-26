@@ -48,22 +48,19 @@
                 <Grid.RowDefinitions>
                     <RowDefinition></RowDefinition>
                     <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
                 </Grid.RowDefinitions>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition></ColumnDefinition>
-                        <ColumnDefinition></ColumnDefinition>
-                        <ColumnDefinition></ColumnDefinition>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition></RowDefinition>
-                    </Grid.RowDefinitions>
-                    <Button Grid.Column="0" Grid.Row="0" Margin="10" Command="{Binding CheckAsxButtonCommand}">Check ASX</Button>
-                    <Button Grid.Column="1" Grid.Row="0" Margin="10" Command="{Binding CheckNyseButtonCommand}">Check NYSE</Button>
-                    <Button Grid.Column="2" Grid.Row="0" Margin="10" Command="{Binding CheckNasdaqButtonCommand}">Check NASDAQ</Button>
-                </Grid>
+                <StackPanel Orientation="Horizontal" Margin="10">
+                    <Label Content="Company code:"></Label>
+                    <TextBox MinWidth="100" Text="{Binding StockCodeTextBox}"></TextBox>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="1" Grid.Column="0">
+                    <Button Margin="0, 0, 5, 0" Command="{Binding CheckAsxButtonCommand}">Check ASX</Button>
+                    <Button Margin="5, 0, 5, 0" Command="{Binding CheckNyseButtonCommand}">Check NYSE</Button>
+                    <Button Margin="5, 0, 0, 0" Command="{Binding CheckNasdaqButtonCommand}">Check NASDAQ</Button>
+                </StackPanel>
                 <ListView Grid.Column="0" 
-                          Grid.Row="1" 
+                          Grid.Row="2" 
                           Margin="10" 
                           ItemsSource="{Binding Path=ListOfCompanies}" 
                           MinHeight="310"

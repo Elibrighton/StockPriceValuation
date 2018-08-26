@@ -87,6 +87,18 @@ namespace StockPriceValuation
             }
         }
 
+        private string _stockCodeTextBox;
+
+        public string StockCodeTextBox
+        {
+            get { return _stockCodeTextBox; }
+            set
+            {
+                _stockCodeTextBox = value;
+                NotifyPropertyChanged("StockCodeTextBox");
+            }
+        }
+
         public ICommand CheckAsxButtonCommand { get; set; }
         public ICommand CheckNyseButtonCommand { get; set; }
         public ICommand CheckNasdaqButtonCommand { get; set; }
@@ -123,7 +135,7 @@ namespace StockPriceValuation
             MainProgressMax = range.Rows.Count;
 
             StatusMessageTextBlock = "Getting ASX companies";
-            var asxCompanies = await Task.Run(() => GetAsxCompanies(excel, range, firstUsedRow));
+            var asxCompanies = await Task.Run(() => GetAsxCompanies(excel, range, firstUsedRow, StockCodeTextBox));
 
             ResetMainProgress();
             MainProgressMax = asxCompanies.Count();
@@ -156,10 +168,11 @@ namespace StockPriceValuation
 
                 MainProgressValue++;
 
-                //if (stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
-                //{
-                ListOfCompanies.Add(company);
-                //}
+                if ((stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio) 
+                    || !string.IsNullOrEmpty(StockCodeTextBox))
+                {
+                    ListOfCompanies.Add(company);
+                }
             }
 
             StatusMessageTextBlock = "Finished update";
@@ -219,10 +232,10 @@ namespace StockPriceValuation
 
                     MainProgressValue++;
 
-                    //if (stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
-                    //{
-                    ListOfCompanies.Add(company);
-                    //}
+                    if (stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
+                    {
+                        ListOfCompanies.Add(company);
+                    }
                 }
 
                 StatusMessageTextBlock = "Finished update";
@@ -233,7 +246,7 @@ namespace StockPriceValuation
                 StatusMessageTextBlock = "Spreadsheet does not exist. You can download it from 'https://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE'";
             }
         }
-        
+
         private async void OnCheckNasdaqButtonCommand(object param)
         {
 
@@ -273,7 +286,7 @@ namespace StockPriceValuation
             return excel.GetRange(firstUsedRow, firstUsedColumn);
         }
 
-        public ObservableCollection<AusCompany> GetAsxCompanies(Excel excel, Range range, int firstUsedRow)
+        public ObservableCollection<AusCompany> GetAsxCompanies(Excel excel, Range range, int firstUsedRow, string stockCode)
         {
             var companies = new ObservableCollection<AusCompany>();
 
@@ -291,7 +304,12 @@ namespace StockPriceValuation
                 }
 
                 company.Industry = industry;
-                companies.Add(company);
+
+                if (string.IsNullOrEmpty(stockCode) || string.Equals(company.Stock.Code, stockCode, StringComparison.OrdinalIgnoreCase))
+                {
+                    companies.Add(company);
+                }
+
                 MainProgressValue++;
             }
 
