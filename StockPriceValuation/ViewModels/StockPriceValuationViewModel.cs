@@ -145,6 +145,8 @@ namespace StockPriceValuation
             {
                 var stock = company.Stock;
 
+                StatusMessageTextBlock = string.Concat("Valuating ", company.Name);
+
                 await Task.Run(() => GetYahooFinanceResponse(stock));
 
                 if (stock.HasPrice && stock.HasTtmEps && stock.SecondEps.HasValue)
@@ -168,7 +170,7 @@ namespace StockPriceValuation
 
                 MainProgressValue++;
 
-                if ((stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio) 
+                if ((stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
                     || !string.IsNullOrEmpty(StockCodeTextBox))
                 {
                     ListOfCompanies.Add(company);
