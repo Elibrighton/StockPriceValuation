@@ -251,7 +251,70 @@ namespace StockPriceValuation
 
         private async void OnCheckNasdaqButtonCommand(object param)
         {
+            var path = @"C:\Users\st3gs\Downloads\companylist.csv";
 
+            if (File.Exists(path))
+            {
+                StatusMessageTextBlock = "Importing spreadsheet";
+                MainProgressIsIndeterminate = true;
+
+                var excel = await Task.Run(() => OpenExcel(path));
+
+                var firstUsedRow = 2;
+                var firstUsedColumn = 1;
+
+                var range = await Task.Run(() => GetRange(excel, firstUsedRow, firstUsedColumn));
+
+                MainProgressIsIndeterminate = false;
+                MainProgressMax = range.Rows.Count;
+
+                StatusMessageTextBlock = "Getting NASDAQ companies";
+                var nasdaqCompanies = await Task.Run(() => GetNasdaqCompanies(excel, range, firstUsedRow));
+
+                ResetMainProgress();
+                MainProgressMax = nasdaqCompanies.Count();
+                StatusMessageTextBlock = "Valuating stock prices";
+
+                foreach (var company in nasdaqCompanies)
+                {
+                    var stock = company.Stock;
+
+                    await Task.Run(() => GetYahooFinanceResponse(stock));
+
+                    if (stock.HasPrice && stock.HasTtmEps && stock.SecondEps.HasValue)
+                    {
+                        await Task.Run(() => GetWallStreetJournalResponse(stock));
+
+                        if (stock.FirstEps.HasValue)
+                        {
+                            stock.GetEps();
+
+                            await Task.Run(() => GetMsnMoneyResponse(stock));
+
+                            if (stock.SecondPeRatio.HasValue)
+                            {
+                                stock.GetPeRatio();
+
+                                await Task.Run(() => GetStockValuation(stock));
+                            }
+                        }
+                    }
+
+                    MainProgressValue++;
+
+                    if (stock.Decision == "Buy" && stock.HasPrice && stock.HasTtmEps && stock.HasEps && stock.HasPeRatio)
+                    {
+                        ListOfCompanies.Add(company);
+                    }
+                }
+
+                StatusMessageTextBlock = "Finished update";
+                ResetMainProgress();
+            }
+            else
+            {
+                StatusMessageTextBlock = "Spreadsheet does not exist. You can download it from 'https://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=NASDAQ'";
+            }
         }
 
         public Excel OpenExcel(string path)
@@ -330,6 +393,42 @@ namespace StockPriceValuation
                 company.Name = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
                 company.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value;
                 company.Stock.StockExchange = Stock.Exchange.NYSE;
+                var industry = (string)(excel.Worksheet.Cells[i + 1, 8] as Range).Value;
+
+                if (!_stockPriceValuation.Industries.Contains(industry))
+                {
+                    _stockPriceValuation.Industries.Add(industry);
+                }
+
+                company.Industry = industry;
+                var sector = (string)(excel.Worksheet.Cells[i + 1, 7] as Range).Value;
+
+                if (!_stockPriceValuation.Sectors.Contains(sector))
+                {
+                    _stockPriceValuation.Sectors.Add(sector);
+                }
+
+                company.Sector = sector;
+                companies.Add(company);
+                MainProgressValue++;
+                //break; // get just first company for debug
+            }
+
+            excel.Close();
+
+            return companies;
+        }
+
+        public ObservableCollection<UsaCompany> GetNasdaqCompanies(Excel excel, Range range, int firstUsedRow)
+        {
+            var companies = new ObservableCollection<UsaCompany>();
+
+            for (var i = firstUsedRow - 1; i < range.Rows.Count; i++)
+            {
+                var company = new UsaCompany();
+                company.Name = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
+                company.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value.ToString();
+                company.Stock.StockExchange = Stock.Exchange.NASDAQ;
                 var industry = (string)(excel.Worksheet.Cells[i + 1, 8] as Range).Value;
 
                 if (!_stockPriceValuation.Industries.Contains(industry))
