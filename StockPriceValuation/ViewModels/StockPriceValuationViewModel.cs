@@ -18,6 +18,8 @@ namespace StockPriceValuation
     {
         private StockPriceValuationModel _stockPriceValuation = new StockPriceValuationModel();
         private ObservableCollection<Company> _companies;
+        private bool isCancelled;
+        private bool isPaused;
 
         private int _mainProgressMax;
 
@@ -322,39 +324,25 @@ namespace StockPriceValuation
         {
             DisableControls();
 
-            if (_asxRadioButtonChecked)
+            if (isCancelled)
             {
-                StatusMessageTextBlock = "Downloading spreadsheet";
-                MainProgressIsIndeterminate = true;
-
-                var filename = "ASXListedCompanies.csv";
-                var url = string.Concat("https://www.asx.com.au/asx/research/", filename);
-
-                var excel = await Task.Run(() => DownloadExcel(url, filename));
-
-                var firstUsedRow = 4;
-                var firstUsedColumn = 1;
-
-                var range = await Task.Run(() => GetRange(excel, firstUsedRow, firstUsedColumn));
-
-                MainProgressIsIndeterminate = false;
-                MainProgressMax = range.Rows.Count;
-
-                StatusMessageTextBlock = "Getting ASX companies";
-                _companies = new ObservableCollection<Company>(await Task.Run(() => GetAsxCompanies(excel, range, firstUsedRow, StockCodeTextBox)));
+                ListOfCompanies.Clear();
+                isCancelled = false;
             }
-            else if (_nyseRadioButtonChecked || _nasdaqRadioButtonChecked)
-            {
-                var path = @"C:\Users\st3gs\Downloads\companylist.csv";
 
-                if (File.Exists(path))
+            if (!isPaused)
+            {
+                if (_asxRadioButtonChecked)
                 {
-                    StatusMessageTextBlock = "Importing spreadsheet";
+                    StatusMessageTextBlock = "Downloading spreadsheet";
                     MainProgressIsIndeterminate = true;
 
-                    var excel = await Task.Run(() => OpenExcel(path));
+                    var filename = "ASXListedCompanies.csv";
+                    var url = string.Concat("https://www.asx.com.au/asx/research/", filename);
 
-                    var firstUsedRow = 2;
+                    var excel = await Task.Run(() => DownloadExcel(url, filename));
+
+                    var firstUsedRow = 4;
                     var firstUsedColumn = 1;
 
                     var range = await Task.Run(() => GetRange(excel, firstUsedRow, firstUsedColumn));
@@ -362,60 +350,120 @@ namespace StockPriceValuation
                     MainProgressIsIndeterminate = false;
                     MainProgressMax = range.Rows.Count;
 
-                    StatusMessageTextBlock = string.Concat("Getting ", GetUsStockExchangeText(), " companies");
-                    _companies = new ObservableCollection<Company>(await Task.Run(() => GetUsCompanies(excel, range, firstUsedRow)));
+                    StatusMessageTextBlock = "Getting ASX companies";
+                    _companies = new ObservableCollection<Company>(await Task.Run(() => GetAsxCompanies(excel, range, firstUsedRow, StockCodeTextBox)));
                 }
-                else
+                else if (_nyseRadioButtonChecked || _nasdaqRadioButtonChecked)
                 {
-                    StatusMessageTextBlock = string.Concat("Spreadsheet does not exist. You can download it from 'https://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=", GetUsStockExchangeText(), "'");
+                    var path = @"C:\Users\st3gs\Downloads\companylist.csv";
+
+                    if (File.Exists(path))
+                    {
+                        StatusMessageTextBlock = "Importing spreadsheet";
+                        MainProgressIsIndeterminate = true;
+
+                        var excel = await Task.Run(() => OpenExcel(path));
+
+                        var firstUsedRow = 2;
+                        var firstUsedColumn = 1;
+
+                        var range = await Task.Run(() => GetRange(excel, firstUsedRow, firstUsedColumn));
+
+                        MainProgressIsIndeterminate = false;
+                        MainProgressMax = range.Rows.Count;
+
+                        StatusMessageTextBlock = string.Concat("Getting ", GetUsStockExchangeText(), " companies");
+                        _companies = new ObservableCollection<Company>(await Task.Run(() => GetUsCompanies(excel, range, firstUsedRow)));
+                    }
+                    else
+                    {
+                        StatusMessageTextBlock = string.Concat("Spreadsheet does not exist. You can download it from 'https://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=", GetUsStockExchangeText(), "'");
+                    }
                 }
             }
-
-            if (_companies != null &&  _companies.Any())
+            else
             {
+                isPaused = false;
+            }
+
+            if (_companies != null && _companies.Any())
+            {
+                PauseButtonEnabled = true;
+                CancelButtonEnabled = true;
                 ResetMainProgress();
                 MainProgressMax = _companies.Count();
                 StatusMessageTextBlock = "Valuating stock prices";
 
                 foreach (var company in _companies)
                 {
-                    var stock = company.Stock;
-
-                    StatusMessageTextBlock = string.Concat("Valuating ", company.Name);
-
-                    await Task.Run(() => GetYahooFinanceResponse(stock));
-
-                    if (stock.HasPrice && stock.HasTtmEps && stock.SecondEps.HasValue)
+                    if (!isCancelled && !isPaused)
                     {
-                        await Task.Run(() => GetWallStreetJournalResponse(stock));
+                        var stock = company.Stock;
 
-                        if (stock.FirstEps.HasValue)
+                        StatusMessageTextBlock = string.Concat("Valuating ", company.Name);
+
+                        if (string.IsNullOrEmpty(stock.Decision))
                         {
-                            stock.GetEps();
+                            await Task.Run(() => GetYahooFinanceResponse(stock));
 
-                            await Task.Run(() => GetMsnMoneyResponse(stock));
-
-                            if (stock.SecondPeRatio.HasValue)
+                            if (stock.HasPrice && stock.HasTtmEps && stock.SecondEps.HasValue)
                             {
-                                stock.GetPeRatio();
+                                await Task.Run(() => GetWallStreetJournalResponse(stock));
+
+                                if (stock.FirstEps.HasValue)
+                                {
+                                    stock.GetEps();
+
+                                    await Task.Run(() => GetMsnMoneyResponse(stock));
+
+                                    if (stock.SecondPeRatio.HasValue)
+                                    {
+                                        stock.GetPeRatio();
+                                    }
+                                }
+                            }
+
+                            await Task.Run(() => GetStockValuation(stock));
+
+                            if (IsDisplayingCompany(stock))
+                            {
+                                ListOfCompanies.Add(company);
                             }
                         }
+
+                        MainProgressValue++;
                     }
-
-                    await Task.Run(() => GetStockValuation(stock));
-
-                    MainProgressValue++;
-
-                    if (IsDisplayingCompany(stock))
+                    else
                     {
-                        ListOfCompanies.Add(company);
+                        EnableControls();
                     }
                 }
 
-                StatusMessageTextBlock = "Finished update";
+                var actionText = GetActionText(isCancelled, isPaused);
+                StatusMessageTextBlock = string.Concat(actionText, " valuations");
                 ResetMainProgress();
                 EnableControls();
             }
+        }
+
+        private string GetActionText(bool isCancelled, bool isPaused)
+        {
+            var actionText = string.Empty;
+
+            if (isCancelled)
+            {
+                actionText = "Cancelled";
+            }
+            else if (isPaused)
+            {
+                actionText = "Paused";
+            }
+            else
+            {
+                actionText = "Finished";
+            }
+
+            return actionText;
         }
 
         private bool IsDisplayingCompany(Stock stock)
@@ -429,12 +477,14 @@ namespace StockPriceValuation
 
         private void EnableControls()
         {
-            AsxRadioButtonEnabled = true;
-            NyseRadioButtonEnabled = true;
-            NasdaqRadioButtonEnabled = true;
+            if (!isPaused)
+            {
+                AsxRadioButtonEnabled = true;
+                NyseRadioButtonEnabled = true;
+                NasdaqRadioButtonEnabled = true;
+            }
+
             CheckButtonEnabled = true;
-            PauseButtonEnabled = false;
-            CancelButtonEnabled = false;
         }
 
         private void DisableControls()
@@ -443,18 +493,33 @@ namespace StockPriceValuation
             NyseRadioButtonEnabled = false;
             NasdaqRadioButtonEnabled = false;
             CheckButtonEnabled = false;
-            PauseButtonEnabled = true;
-            CancelButtonEnabled = true;
         }
 
-        private async void OnPauseButtonCommand(object param)
+        private void OnPauseButtonCommand(object param)
         {
-
+            HaltValuation("Pausing");
         }
 
-        private async void OnCancelButtonCommand(object param)
+        private void OnCancelButtonCommand(object param)
         {
+            HaltValuation("Cancelling");
+        }
 
+        private void HaltValuation(string actionText)
+        {
+            StatusMessageTextBlock = string.Concat(actionText, " valuation");
+
+            if (actionText == "Cancelling")
+            {
+                isCancelled = true;
+            }
+            else
+            {
+                isPaused = true;
+            }
+
+            PauseButtonEnabled = false;
+            CancelButtonEnabled = false;
         }
 
         private void OnDecisionChangedCommand(object param)
