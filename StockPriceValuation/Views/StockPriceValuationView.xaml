@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:local="clr-namespace:StockPriceValuation"
         mc:Ignorable="d"
-        Title="Stock Price Valuation" Height="500" Width="1000">
+        Title="Stock Price Valuation" Height="600" Width="1000" WindowStartupLocation="CenterScreen">
     <Window.DataContext>
         <local:StockPriceValuationViewModel/>
     </Window.DataContext>
@@ -49,22 +50,54 @@
                     <RowDefinition></RowDefinition>
                     <RowDefinition></RowDefinition>
                     <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
                 </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal" Margin="10">
-                    <Label Content="Company code:"></Label>
-                    <TextBox MinWidth="100" Text="{Binding StockCodeTextBox}"></TextBox>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="10" Grid.Row="1" Grid.Column="0">
-                    <Button Margin="0, 0, 5, 0" Command="{Binding CheckAsxButtonCommand}">Check ASX</Button>
-                    <Button Margin="5, 0, 5, 0" Command="{Binding CheckNyseButtonCommand}">Check NYSE</Button>
-                    <Button Margin="5, 0, 0, 0" Command="{Binding CheckNasdaqButtonCommand}">Check NASDAQ</Button>
+                <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0">
+                    <StackPanel Orientation="Horizontal" Margin="10">
+                        <Label Content="Stock exchange:"></Label>
+                        <RadioButton GroupName="StockExchange" IsChecked="{Binding AsxRadioButtonChecked}" IsEnabled="{Binding AsxRadioButtonEnabled}" Margin="0, 0, 5, 0" VerticalAlignment="Center">ASX</RadioButton>
+                        <RadioButton GroupName="StockExchange" IsChecked="{Binding NyseRadioButtonChecked}" IsEnabled="{Binding NyseRadioButtonEnabled}" Margin="5, 0, 5, 0" VerticalAlignment="Center">NYSE</RadioButton>
+                        <RadioButton GroupName="StockExchange" IsChecked="{Binding NasdaqRadioButtonChecked}" IsEnabled="{Binding NasdaqRadioButtonEnabled}" Margin="5, 0, 0, 0" VerticalAlignment="Center">NASDAQ</RadioButton>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="10">
+                        <Label Content="Filter:"></Label>
+                        <ComboBox Width="200" HorizontalAlignment="Left">
+                            <ComboBoxItem IsSelected="{Binding AllDecisionComboBox}">All</ComboBoxItem>
+                            <ComboBoxItem IsSelected="{Binding BuyDecisionComboBox}">Buy</ComboBoxItem>
+                            <ComboBoxItem IsSelected="{Binding HoldDecisionComboBox}">Hold</ComboBoxItem>
+                            <ComboBoxItem IsSelected="{Binding SellDecisionComboBox}">Sell</ComboBoxItem>
+                            <ComboBoxItem IsSelected="{Binding UnknownDecisionComboBox}">Unknown</ComboBoxItem>
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="SelectionChanged">
+                                    <i:InvokeCommandAction Command="{Binding DecisionChangedCommand}" />
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="10">
+                        <CheckBox IsChecked="{Binding ExcludeUnknownCheckbox}" IsEnabled="{Binding ExcludeUnknownCheckboxEnabled}" VerticalAlignment="Center">
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="Checked">
+                                    <i:InvokeCommandAction Command="{Binding ExcludeUnknownCheckboxCommand}" />
+                                </i:EventTrigger>
+                                <i:EventTrigger EventName="Unchecked">
+                                    <i:InvokeCommandAction Command="{Binding ExcludeUnknownCheckboxCommand}" />
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                            Exclude Unknown
+                        </CheckBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="10">
+                        <Label Content="Company code:"></Label>
+                        <TextBox MinWidth="100" Text="{Binding StockCodeTextBox}"></TextBox>
+                    </StackPanel>
                 </StackPanel>
                 <ListView Grid.Column="0" 
-                          Grid.Row="2" 
+                          Grid.Row="1" 
                           Margin="10" 
                           ItemsSource="{Binding Path=ListOfCompanies}" 
-                          MinHeight="310"
-                          MaxHeight="310"
+                          MinHeight="420"
+                          MaxHeight="420"
                           SelectionMode="Single">
                     <ListView.View>
                         <GridView>
@@ -80,6 +113,11 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="10" Grid.Row="2" Grid.Column="0">
+                    <Button Margin="0, 0, 5, 0" Command="{Binding CheckButtonCommand}" IsEnabled="{Binding CheckButtonEnabled}" MinWidth="100">Check</Button>
+                    <Button Margin="5, 0, 5, 0" Command="{Binding PauseButtonCommand}" IsEnabled="{Binding PauseButtonEnabled}" MinWidth="100">Pause</Button>
+                    <Button Margin="5, 0, 0, 0" Command="{Binding CancelButtonCommand}" IsEnabled="{Binding CancelButtonEnabled}" MinWidth="100">Cancel</Button>
+                </StackPanel>
             </Grid>
         </StackPanel>
     </DockPanel>

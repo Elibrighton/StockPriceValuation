@@ -27,13 +27,16 @@ namespace StockPriceValuation
 
         public void GetValuation()
         {
-            var epsIn10Years = EpsIn10Years(TtmEps, Eps, _years);
-            var sharePriceIn10Years = SharePriceIn10Years(epsIn10Years, PeRatio);
-            var yearsToDoubleMoney = YearsToDoubleMoney(_rateOfReturn);
-            var numberOfYearsToDoubleMoney = NumberOfYearsToDoubleMoney(_years, yearsToDoubleMoney);
+            if (TtmEps >= 0 && Eps >= 0)
+            {
+                var epsIn10Years = EpsIn10Years(TtmEps, Eps, _years);
+                var sharePriceIn10Years = SharePriceIn10Years(epsIn10Years, PeRatio);
+                var yearsToDoubleMoney = YearsToDoubleMoney(_rateOfReturn);
+                var numberOfYearsToDoubleMoney = NumberOfYearsToDoubleMoney(_years, yearsToDoubleMoney);
 
-            FairPrice = Math.Round(PriceToBuySharesAtRateOfReturn(numberOfYearsToDoubleMoney, sharePriceIn10Years), 4);
-            BuyPrice = Math.Round(PricetoBuySharesAtMarginOfSafety(FairPrice, _marginOfSafetly), 4);
+                FairPrice = Math.Round(PriceToBuySharesAtRateOfReturn(numberOfYearsToDoubleMoney, sharePriceIn10Years), 4);
+                BuyPrice = Math.Round(PricetoBuySharesAtMarginOfSafety(FairPrice, _marginOfSafetly), 4);
+            }
         }
 
         public double EpsIn10Years(double ttmEps, double eps, double years)

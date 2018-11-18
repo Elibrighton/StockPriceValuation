@@ -526,15 +526,24 @@ namespace StockPriceValuation.Services
 
         public void GetDecision()
         {
-            if (Price > 0
-                && Valuation.BuyPrice > 0
-                && Valuation.BuyPrice >= Price)
+            if (Price > 0 && Valuation.BuyPrice > 0)
             {
-                Decision = "Buy";
+                if (Price <= Valuation.BuyPrice)
+                {
+                    Decision = "Buy";
+                }
+                else if (Price >= (Valuation.FairPrice + (Valuation.FairPrice * 0.2))) // price is greater than 20% of buy price
+                {
+                    Decision = "Sell";
+                }
+                else
+                {
+                    Decision = "Hold";
+                }
             }
             else
             {
-                Decision = "Sell";
+                Decision = "Unknown";
             }
         }
 
@@ -545,5 +554,4 @@ namespace StockPriceValuation.Services
             NASDAQ
         }
     }
-
 }
