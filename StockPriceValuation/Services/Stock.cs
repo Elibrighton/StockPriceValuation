@@ -199,6 +199,50 @@ namespace StockPriceValuation.Services
                     }
                 }
             }
+            else if (!HasPrice && node.InnerText.Contains("Open", StringComparison.OrdinalIgnoreCase))
+            {
+                var parentNode = node.ParentNode.ParentNode;
+
+                if (parentNode.Name.Contains("tr", StringComparison.OrdinalIgnoreCase))
+                {
+                    var childrenNodes = parentNode.SelectNodes("td");
+
+                    foreach (var childNode in childrenNodes)
+                    {
+                        var childSpanNodes = childNode.SelectNodes("span");
+
+                        if (childSpanNodes != null)
+                        {
+                            var hasOpenPrice = false;
+                            var openPrice = 0.0;
+
+                            foreach (var childTwoNode in childSpanNodes)
+                            {
+                                var innerText = childTwoNode.InnerText;
+
+                                if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("Open", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    double convertedInnerText;
+
+                                    if (Double.TryParse(innerText, out convertedInnerText))
+                                    {
+                                        openPrice = convertedInnerText;
+                                        hasOpenPrice = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!HasPrice && hasOpenPrice)
+                            {
+                                Price = openPrice;
+                                HasPrice = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private string GetYahooFinanceUrl(string code, bool isAnalysisTab = false)

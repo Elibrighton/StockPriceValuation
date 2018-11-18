@@ -373,7 +373,7 @@ namespace StockPriceValuation
                         MainProgressMax = range.Rows.Count;
 
                         StatusMessageTextBlock = string.Concat("Getting ", GetUsStockExchangeText(), " companies");
-                        _companies = new ObservableCollection<Company>(await Task.Run(() => GetUsCompanies(excel, range, firstUsedRow)));
+                        _companies = new ObservableCollection<Company>(await Task.Run(() => GetUsCompanies(excel, range, firstUsedRow, StockCodeTextBox)));
                     }
                     else
                     {
@@ -443,6 +443,8 @@ namespace StockPriceValuation
                 StatusMessageTextBlock = string.Concat(actionText, " valuations");
                 ResetMainProgress();
                 EnableControls();
+                PauseButtonEnabled = false;
+                CancelButtonEnabled = false;
             }
         }
 
@@ -625,6 +627,11 @@ namespace StockPriceValuation
                 }
 
                 MainProgressValue++;
+
+                if (!string.IsNullOrEmpty(stockCode) && string.Equals(company.Stock.Code, stockCode, StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
             }
 
             excel.Close();
@@ -632,7 +639,7 @@ namespace StockPriceValuation
             return companies;
         }
 
-        public ObservableCollection<UsaCompany> GetUsCompanies(Excel excel, Range range, int firstUsedRow)
+        public ObservableCollection<UsaCompany> GetUsCompanies(Excel excel, Range range, int firstUsedRow, string stockCode)
         {
             var companies = new ObservableCollection<UsaCompany>();
 
@@ -658,9 +665,18 @@ namespace StockPriceValuation
                 }
 
                 company.Sector = sector;
-                companies.Add(company);
+
+                if (string.IsNullOrEmpty(stockCode) || string.Equals(company.Stock.Code, stockCode, StringComparison.OrdinalIgnoreCase))
+                {
+                    companies.Add(company);
+                }
+
                 MainProgressValue++;
-                //break; // get just first company for debug
+                
+                if (!string.IsNullOrEmpty(stockCode) && string.Equals(company.Stock.Code, stockCode, StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
             }
 
             excel.Close();
