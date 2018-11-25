@@ -717,6 +717,7 @@ namespace StockPriceValuation
             stock.Valuation.PeRatio = stock.PeRatio;
             stock.Valuation.GetValuation();
             stock.GetDecision();
+            stock.GetPercentageDiff();
         }
 
         private void ResetMainProgress()

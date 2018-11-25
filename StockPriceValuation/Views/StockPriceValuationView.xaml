@@ -6,13 +6,13 @@
         xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
         xmlns:local="clr-namespace:StockPriceValuation"
         mc:Ignorable="d"
-        Title="Stock Price Valuation" Height="600" Width="1000" WindowStartupLocation="CenterScreen">
+        Title="Stock Price Valuation" Height="600" Width="1075" WindowStartupLocation="CenterScreen">
     <Window.DataContext>
         <local:StockPriceValuationViewModel/>
     </Window.DataContext>
     <Window.Resources>
         <Style x:Key="progressBarStyle" TargetType="ProgressBar">
-            <Setter Property="Width" Value="720" />
+            <Setter Property="Width" Value="795" />
             <Setter Property="Height" Value="16" />
             <Setter Property="Minimum" Value="0" />
         </Style>
@@ -109,6 +109,7 @@
                             <GridViewColumn Header="PE ratio" Width="75" DisplayMemberBinding="{Binding Stock.PeRatio}" />
                             <GridViewColumn Header="Fair price" Width="75" DisplayMemberBinding="{Binding Stock.Valuation.FairPrice}" />
                             <GridViewColumn Header="Buy price" Width="75" DisplayMemberBinding="{Binding Stock.Valuation.BuyPrice}" />
+                            <GridViewColumn Header="Percent diff" Width="75" DisplayMemberBinding="{Binding Stock.PercentageDiff}" />
                             <GridViewColumn Header="Decision" Width="75" DisplayMemberBinding="{Binding Stock.Decision}" />
                         </GridView>
                     </ListView.View>

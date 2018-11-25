@@ -26,6 +26,7 @@ namespace StockPriceValuation.Services
         public ValueSet SecondEps { get; set; }
         public ValueSet FirstPeRatio { get; set; }
         public ValueSet SecondPeRatio { get; set; }
+        public double PercentageDiff { get; set; }
 
         public Stock()
         {
@@ -588,6 +589,18 @@ namespace StockPriceValuation.Services
             else
             {
                 Decision = "Unknown";
+            }
+        }
+
+        internal void GetPercentageDiff()
+        {
+            if (Price > 0 && Valuation.FairPrice > 0)
+            {
+                PercentageDiff = Math.Round(((Price / Valuation.FairPrice) * 100), 2);
+            }
+            else
+            {
+                PercentageDiff = 0;
             }
         }
 
