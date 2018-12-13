@@ -1,10 +1,14 @@
-﻿using System;
+﻿using StockPriceValuation.Models;
+using StockPriceValuation.ViewModels;
+using StockPriceValuation.Views;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using Unity;
 
 namespace StockPriceValuation
 {
@@ -13,5 +17,15 @@ namespace StockPriceValuation
     /// </summary>
     public partial class App : Application
     {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            IUnityContainer container = new UnityContainer();
+            container.RegisterType<IStockPriceValuationViewModel, StockPriceValuationViewModel>();
+            container.RegisterType<IStockPriceValuationModel, StockPriceValuationModel>();
+
+            var window = container.Resolve<StockPriceValuationView>();
+            window.Show();
+        }
     }
 }

@@ -2,6 +2,7 @@
 using StockPriceValuation.Base;
 using StockPriceValuation.Models;
 using StockPriceValuation.Services;
+using StockPriceValuation.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,57 +15,16 @@ using System.Windows.Input;
 
 namespace StockPriceValuation
 {
-    public class StockPriceValuationViewModel : ObservableObject
+    public class StockPriceValuationViewModel : ObservableObject, IStockPriceValuationViewModel
     {
-        private StockPriceValuationModel _stockPriceValuation = new StockPriceValuationModel();
+        private const int InitialProgressBarMax = 1;
+        private const int InitialProgressBarValue = 0;
+
+        private readonly IStockPriceValuationModel _stockPriceValuationModel;
+
         private ObservableCollection<Company> _companies;
         private bool isCancelled;
         private bool isPaused;
-
-        private int _mainProgressMax;
-
-        public int MainProgressMax
-        {
-            get { return _mainProgressMax; }
-            set
-            {
-                if (_mainProgressMax != value)
-                {
-                    _mainProgressMax = value;
-                    NotifyPropertyChanged("MainProgressMax");
-                }
-            }
-        }
-
-        private int _mainProgressValue;
-
-        public int MainProgressValue
-        {
-            get { return _mainProgressValue; }
-            set
-            {
-                if (_mainProgressValue != value)
-                {
-                    _mainProgressValue = value;
-                    NotifyPropertyChanged("MainProgressValue");
-                }
-            }
-        }
-
-        private bool _mainProgressIsIndeterminate;
-
-        public bool MainProgressIsIndeterminate
-        {
-            get { return _mainProgressIsIndeterminate; }
-            set
-            {
-                if (_mainProgressIsIndeterminate != value)
-                {
-                    _mainProgressIsIndeterminate = value;
-                    NotifyPropertyChanged("MainProgressIsIndeterminate");
-                }
-            }
-        }
 
         private string _statusMessageTextBlock;
 
@@ -300,17 +260,17 @@ namespace StockPriceValuation
         public ICommand DecisionChangedCommand { get; set; }
         public ICommand ExcludeUnknownCheckboxCommand { get; set; }
 
-        public StockPriceValuationViewModel()
+        public StockPriceValuationViewModel(IStockPriceValuationModel stockPriceValuationModel)
         {
+            _stockPriceValuationModel = stockPriceValuationModel;
+            ResetProgressBar();
+
             CheckButtonCommand = new RelayCommand(OnCheckButtonCommand);
             PauseButtonCommand = new RelayCommand(OnPauseButtonCommand);
             CancelButtonCommand = new RelayCommand(OnCancelButtonCommand);
             DecisionChangedCommand = new RelayCommand(OnDecisionChangedCommand);
             ExcludeUnknownCheckboxCommand = new RelayCommand(OnExcludeUnknownCheckboxCommand);
-            ResetMainProgress();
-            _stockPriceValuation.Years = 10;
-            _stockPriceValuation.RateOfReturn = 0.15; // 15%
-            _stockPriceValuation.MarginOfSafety = 0.50; // 50%
+
             _asxRadioButtonChecked = true;
             _allDecisionComboBox = true;
             _checkButtonEnabled = true;
@@ -335,7 +295,7 @@ namespace StockPriceValuation
                 if (_asxRadioButtonChecked)
                 {
                     StatusMessageTextBlock = "Downloading spreadsheet";
-                    MainProgressIsIndeterminate = true;
+                    ProgressBarIsIndeterminate = true;
 
                     var filename = "ASXListedCompanies.csv";
                     var url = string.Concat("https://www.asx.com.au/asx/research/", filename);
@@ -347,8 +307,8 @@ namespace StockPriceValuation
 
                     var range = await Task.Run(() => GetRange(excel, firstUsedRow, firstUsedColumn));
 
-                    MainProgressIsIndeterminate = false;
-                    MainProgressMax = range.Rows.Count;
+                    ProgressBarIsIndeterminate = false;
+                    ProgressBarMax = range.Rows.Count;
 
                     StatusMessageTextBlock = "Getting ASX companies";
                     _companies = new ObservableCollection<Company>(await Task.Run(() => GetAsxCompanies(excel, range, firstUsedRow, StockCodeTextBox)));
@@ -360,7 +320,7 @@ namespace StockPriceValuation
                     if (File.Exists(path))
                     {
                         StatusMessageTextBlock = "Importing spreadsheet";
-                        MainProgressIsIndeterminate = true;
+                        ProgressBarIsIndeterminate = true;
 
                         var excel = await Task.Run(() => OpenExcel(path));
 
@@ -369,8 +329,8 @@ namespace StockPriceValuation
 
                         var range = await Task.Run(() => GetRange(excel, firstUsedRow, firstUsedColumn));
 
-                        MainProgressIsIndeterminate = false;
-                        MainProgressMax = range.Rows.Count;
+                        ProgressBarIsIndeterminate = false;
+                        ProgressBarMax = range.Rows.Count;
 
                         StatusMessageTextBlock = string.Concat("Getting ", GetUsStockExchangeText(), " companies");
                         _companies = new ObservableCollection<Company>(await Task.Run(() => GetUsCompanies(excel, range, firstUsedRow, StockCodeTextBox)));
@@ -390,8 +350,8 @@ namespace StockPriceValuation
             {
                 PauseButtonEnabled = true;
                 CancelButtonEnabled = true;
-                ResetMainProgress();
-                MainProgressMax = _companies.Count();
+                ResetProgressBar();
+                ProgressBarMax = _companies.Count();
                 StatusMessageTextBlock = "Valuating stock prices";
 
                 foreach (var company in _companies)
@@ -431,7 +391,7 @@ namespace StockPriceValuation
                             }
                         }
 
-                        MainProgressValue++;
+                        ProgressBarValue++;
                     }
                     else
                     {
@@ -441,7 +401,7 @@ namespace StockPriceValuation
 
                 var actionText = GetActionText(isCancelled, isPaused);
                 StatusMessageTextBlock = string.Concat(actionText, " valuations");
-                ResetMainProgress();
+                ResetProgressBar();
                 EnableControls();
                 PauseButtonEnabled = false;
                 CancelButtonEnabled = false;
@@ -614,9 +574,9 @@ namespace StockPriceValuation
                 company.Stock.StockExchange = Stock.Exchange.ASX;
                 var industry = (string)(excel.Worksheet.Cells[i + 1, 3] as Range).Value;
 
-                if (!_stockPriceValuation.Industries.Contains(industry))
+                if (!_stockPriceValuationModel.Industries.Contains(industry))
                 {
-                    _stockPriceValuation.Industries.Add(industry);
+                    _stockPriceValuationModel.Industries.Add(industry);
                 }
 
                 company.Industry = industry;
@@ -626,7 +586,7 @@ namespace StockPriceValuation
                     companies.Add(company);
                 }
 
-                MainProgressValue++;
+                ProgressBarValue++;
 
                 if (!string.IsNullOrEmpty(stockCode) && string.Equals(company.Stock.Code, stockCode, StringComparison.OrdinalIgnoreCase))
                 {
@@ -651,17 +611,17 @@ namespace StockPriceValuation
                 company.Stock.StockExchange = Stock.Exchange.NYSE;
                 var industry = (string)(excel.Worksheet.Cells[i + 1, 8] as Range).Value;
 
-                if (!_stockPriceValuation.Industries.Contains(industry))
+                if (!_stockPriceValuationModel.Industries.Contains(industry))
                 {
-                    _stockPriceValuation.Industries.Add(industry);
+                    _stockPriceValuationModel.Industries.Add(industry);
                 }
 
                 company.Industry = industry;
                 var sector = (string)(excel.Worksheet.Cells[i + 1, 7] as Range).Value;
 
-                if (!_stockPriceValuation.Sectors.Contains(sector))
+                if (!_stockPriceValuationModel.Sectors.Contains(sector))
                 {
-                    _stockPriceValuation.Sectors.Add(sector);
+                    _stockPriceValuationModel.Sectors.Add(sector);
                 }
 
                 company.Sector = sector;
@@ -671,7 +631,7 @@ namespace StockPriceValuation
                     companies.Add(company);
                 }
 
-                MainProgressValue++;
+                ProgressBarValue++;
                 
                 if (!string.IsNullOrEmpty(stockCode) && string.Equals(company.Stock.Code, stockCode, StringComparison.OrdinalIgnoreCase))
                 {
@@ -711,7 +671,7 @@ namespace StockPriceValuation
 
         public void GetStockValuation(Stock stock)
         {
-            stock.Valuation = new Valuation(_stockPriceValuation.Years, _stockPriceValuation.RateOfReturn, _stockPriceValuation.MarginOfSafety);
+            stock.Valuation = new Valuation(_stockPriceValuationModel.Years, _stockPriceValuationModel.RateOfReturn, _stockPriceValuationModel.MarginOfSafety);
             stock.Valuation.TtmEps = stock.TtmEps;
             stock.Valuation.Eps = stock.Eps;
             stock.Valuation.PeRatio = stock.PeRatio;
@@ -720,10 +680,53 @@ namespace StockPriceValuation
             stock.GetPercentageDiff();
         }
 
-        private void ResetMainProgress()
+        private void ResetProgressBar()
         {
-            MainProgressValue = 0;
-            MainProgressMax = 1;
+            ProgressBarValue = InitialProgressBarValue;
+            ProgressBarMax = InitialProgressBarMax;
         }
+
+        #region Class Memebers
+
+        public int ProgressBarMax
+        {
+            get { return _stockPriceValuationModel.ProgressBarMax; }
+            set
+            {
+                if (_stockPriceValuationModel.ProgressBarMax != value)
+                {
+                    _stockPriceValuationModel.ProgressBarMax = value;
+                    NotifyPropertyChanged("ProgressBarMax");
+                }
+            }
+        }
+
+        public int ProgressBarValue
+        {
+            get { return _stockPriceValuationModel.ProgressBarValue; }
+            set
+            {
+                if (_stockPriceValuationModel.ProgressBarValue != value)
+                {
+                    _stockPriceValuationModel.ProgressBarValue = value;
+                    NotifyPropertyChanged("ProgressBarValue");
+                }
+            }
+        }
+
+        public bool ProgressBarIsIndeterminate
+        {
+            get { return _stockPriceValuationModel.ProgressBarIsIndeterminate; }
+            set
+            {
+                if (_stockPriceValuationModel.ProgressBarIsIndeterminate != value)
+                {
+                    _stockPriceValuationModel.ProgressBarIsIndeterminate = value;
+                    NotifyPropertyChanged("ProgressBarIsIndeterminate");
+                }
+            }
+        }
+
+        #endregion
     }
 }

@@ -7,9 +7,6 @@
         xmlns:local="clr-namespace:StockPriceValuation"
         mc:Ignorable="d"
         Title="Stock Price Valuation" Height="600" Width="1075" WindowStartupLocation="CenterScreen">
-    <Window.DataContext>
-        <local:StockPriceValuationViewModel/>
-    </Window.DataContext>
     <Window.Resources>
         <Style x:Key="progressBarStyle" TargetType="ProgressBar">
             <Setter Property="Width" Value="795" />
@@ -36,9 +33,9 @@
             <Separator Grid.Column="1" />
             <StatusBarItem Grid.Column="2">
                 <ProgressBar Style="{StaticResource progressBarStyle}"
-                            Value="{Binding MainProgressValue, UpdateSourceTrigger=PropertyChanged}"
-                            IsIndeterminate="{Binding MainProgressIsIndeterminate, UpdateSourceTrigger=PropertyChanged}"
-                            Maximum="{Binding MainProgressMax, UpdateSourceTrigger=PropertyChanged}" />
+                            Value="{Binding ProgressBarValue, UpdateSourceTrigger=PropertyChanged}"
+                            IsIndeterminate="{Binding ProgressBarIsIndeterminate, UpdateSourceTrigger=PropertyChanged}"
+                            Maximum="{Binding ProgressBarMax, UpdateSourceTrigger=PropertyChanged}" />
             </StatusBarItem>
         </StatusBar>
         <StackPanel Margin="10">

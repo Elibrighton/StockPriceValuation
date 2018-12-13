@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StockPriceValuation.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,9 +20,10 @@ namespace StockPriceValuation.Views
     /// </summary>
     public partial class StockPriceValuationView : Window
     {
-        public StockPriceValuationView()
+        public StockPriceValuationView(IStockPriceValuationViewModel stockPriceValuationViewModel)
         {
             InitializeComponent();
+            DataContext = stockPriceValuationViewModel;
         }
     }
 }
