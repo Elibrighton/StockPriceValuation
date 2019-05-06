@@ -590,7 +590,7 @@ namespace StockPriceValuation
                     Name = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value
                 };
 
-                var rangeValue = (excel.Worksheet.Cells[i + 1, 2] as Range).Value;
+                var rangeValue = (excel.Worksheet.Cells[i + 1, 1] as Range).Value;
                 company.Stock.Code = rangeValue.ToString();
 
                 company.Stock.StockExchange = GetStockExchange();
