@@ -23,6 +23,8 @@ namespace StockPriceValuation
             IUnityContainer container = new UnityContainer();
             container.RegisterType<IStockPriceValuationViewModel, StockPriceValuationViewModel>();
             container.RegisterType<IStockPriceValuationModel, StockPriceValuationModel>();
+            //container.RegisterType<ICompany, Company>();
+            //container.RegisterType<IStock, Stock>();
 
             var window = container.Resolve<StockPriceValuationView>();
             window.Show();

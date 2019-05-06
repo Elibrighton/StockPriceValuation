@@ -1,5 +1,7 @@
-﻿using System;
+﻿using StockPriceValuation.Services;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +19,9 @@ namespace StockPriceValuation.Models
         public int ProgressBarValue { get; set; }
         public int ProgressBarMax { get; set; }
         public bool ProgressBarIsIndeterminate { get; set; }
+        public string ProgressMessage { get; set; }
+        public int ProgressBarWidth { get; set; }
+        public ObservableCollection<Company> Companies { get; set; }
 
         public StockPriceValuationModel()
         {
@@ -25,6 +30,7 @@ namespace StockPriceValuation.Models
             Years = 10;
             RateOfReturn = 0.15; // 15%
             MarginOfSafety = 0.50; // 50%
+            Companies = new ObservableCollection<Company>();
         }
     }
 }

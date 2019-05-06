@@ -1,5 +1,7 @@
-﻿using System;
+﻿using StockPriceValuation.Services;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,5 +18,8 @@ namespace StockPriceValuation.Models
         int ProgressBarValue { get; set; }
         int ProgressBarMax { get; set; }
         bool ProgressBarIsIndeterminate { get; set; }
+        string ProgressMessage { get; set; }
+        int ProgressBarWidth { get; set; }
+        ObservableCollection<Company> Companies { get; set; }
     }
 }

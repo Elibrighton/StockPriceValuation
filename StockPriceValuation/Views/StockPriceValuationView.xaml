@@ -9,36 +9,13 @@
         Title="Stock Price Valuation" Height="600" Width="1075" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style x:Key="progressBarStyle" TargetType="ProgressBar">
-            <Setter Property="Width" Value="795" />
-            <Setter Property="Height" Value="16" />
+            <Setter Property="Width" Value="1050" />
+            <Setter Property="Height" Value="28" />
             <Setter Property="Minimum" Value="0" />
         </Style>
     </Window.Resources>
     <DockPanel>
-        <StatusBar DockPanel.Dock="Bottom">
-            <StatusBar.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="3*" />
-                        </Grid.ColumnDefinitions>
-                    </Grid>
-                </ItemsPanelTemplate>
-            </StatusBar.ItemsPanel>
-            <StatusBarItem>
-                <TextBlock Text="{Binding StatusMessageTextBlock, UpdateSourceTrigger=PropertyChanged}" />
-            </StatusBarItem>
-            <Separator Grid.Column="1" />
-            <StatusBarItem Grid.Column="2">
-                <ProgressBar Style="{StaticResource progressBarStyle}"
-                            Value="{Binding ProgressBarValue, UpdateSourceTrigger=PropertyChanged}"
-                            IsIndeterminate="{Binding ProgressBarIsIndeterminate, UpdateSourceTrigger=PropertyChanged}"
-                            Maximum="{Binding ProgressBarMax, UpdateSourceTrigger=PropertyChanged}" />
-            </StatusBarItem>
-        </StatusBar>
-        <StackPanel Margin="10">
+        <StackPanel DockPanel.Dock="Top">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition></ColumnDefinition>
@@ -92,7 +69,7 @@
                 <ListView Grid.Column="0" 
                           Grid.Row="1" 
                           Margin="10" 
-                          ItemsSource="{Binding Path=ListOfCompanies}" 
+                          ItemsSource="{Binding Path=Companies}" 
                           MinHeight="420"
                           MaxHeight="420"
                           SelectionMode="Single">
@@ -111,12 +88,29 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="10" Grid.Row="2" Grid.Column="0">
-                    <Button Margin="0, 0, 5, 0" Command="{Binding CheckButtonCommand}" IsEnabled="{Binding CheckButtonEnabled}" MinWidth="100">Check</Button>
-                    <Button Margin="5, 0, 5, 0" Command="{Binding PauseButtonCommand}" IsEnabled="{Binding PauseButtonEnabled}" MinWidth="100">Pause</Button>
-                    <Button Margin="5, 0, 0, 0" Command="{Binding CancelButtonCommand}" IsEnabled="{Binding CancelButtonEnabled}" MinWidth="100">Cancel</Button>
-                </StackPanel>
+                <DockPanel Margin="10" Grid.Row="2" Grid.Column="0">
+                    <TextBlock Text="{Binding ProgressMessage, UpdateSourceTrigger=PropertyChanged}" DockPanel.Dock="Left" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Margin="0, 0, 5, 0" Command="{Binding CheckButtonCommand}" IsEnabled="{Binding CheckButtonEnabled}" MinWidth="100">Check</Button>
+                        <Button Margin="5, 0, 5, 0" Command="{Binding PauseButtonCommand}" IsEnabled="{Binding PauseButtonEnabled}" MinWidth="100">Pause</Button>
+                        <Button Margin="5, 0, 0, 0" Command="{Binding CancelButtonCommand}" IsEnabled="{Binding CancelButtonEnabled}" MinWidth="100">Cancel</Button>
+                    </StackPanel>
+                </DockPanel>
             </Grid>
         </StackPanel>
+        
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel></StackPanel>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem>
+                <ProgressBar Style="{StaticResource progressBarStyle}"
+                            Value="{Binding ProgressBarValue, UpdateSourceTrigger=PropertyChanged}"
+                            IsIndeterminate="{Binding ProgressBarIsIndeterminate, UpdateSourceTrigger=PropertyChanged}"
+                            Maximum="{Binding ProgressBarMax, UpdateSourceTrigger=PropertyChanged}" />
+            </StatusBarItem>
+        </StatusBar>
     </DockPanel>
 </Window>

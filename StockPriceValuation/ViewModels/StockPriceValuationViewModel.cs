@@ -11,6 +11,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 
 namespace StockPriceValuation
@@ -25,30 +26,6 @@ namespace StockPriceValuation
         private ObservableCollection<Company> _companies;
         private bool isCancelled;
         private bool isPaused;
-
-        private string _statusMessageTextBlock;
-
-        public string StatusMessageTextBlock
-        {
-            get { return _statusMessageTextBlock; }
-            set
-            {
-                _statusMessageTextBlock = value;
-                NotifyPropertyChanged("StatusMessageTextBlock");
-            }
-        }
-
-        private ObservableCollection<Company> _listOfCompanies;
-
-        public ObservableCollection<Company> ListOfCompanies
-        {
-            get { return _listOfCompanies; }
-            set
-            {
-                _listOfCompanies = value;
-                NotifyPropertyChanged("ListOfCompanies");
-            }
-        }
 
         private string _stockCodeTextBox;
 
@@ -277,7 +254,6 @@ namespace StockPriceValuation
             _excludeUnknownCheckbox = true;
             _excludeUnknownCheckboxEnabled = true;
             EnableControls();
-            ListOfCompanies = new ObservableCollection<Company>();
         }
 
         private async void OnCheckButtonCommand(object param)
@@ -286,7 +262,7 @@ namespace StockPriceValuation
 
             if (isCancelled)
             {
-                ListOfCompanies.Clear();
+                Companies.Clear();
                 isCancelled = false;
             }
 
@@ -294,7 +270,7 @@ namespace StockPriceValuation
             {
                 if (_asxRadioButtonChecked)
                 {
-                    StatusMessageTextBlock = "Downloading spreadsheet";
+                    ProgressMessage = "Downloading spreadsheet";
                     ProgressBarIsIndeterminate = true;
 
                     var filename = "ASXListedCompanies.csv";
@@ -310,7 +286,7 @@ namespace StockPriceValuation
                     ProgressBarIsIndeterminate = false;
                     ProgressBarMax = range.Rows.Count;
 
-                    StatusMessageTextBlock = "Getting ASX companies";
+                    ProgressMessage = "Getting ASX companies";
                     _companies = new ObservableCollection<Company>(await Task.Run(() => GetAsxCompanies(excel, range, firstUsedRow, StockCodeTextBox)));
                 }
                 else if (_nyseRadioButtonChecked || _nasdaqRadioButtonChecked)
@@ -319,7 +295,7 @@ namespace StockPriceValuation
 
                     if (File.Exists(path))
                     {
-                        StatusMessageTextBlock = "Importing spreadsheet";
+                        ProgressMessage = "Importing spreadsheet";
                         ProgressBarIsIndeterminate = true;
 
                         var excel = await Task.Run(() => OpenExcel(path));
@@ -332,12 +308,12 @@ namespace StockPriceValuation
                         ProgressBarIsIndeterminate = false;
                         ProgressBarMax = range.Rows.Count;
 
-                        StatusMessageTextBlock = string.Concat("Getting ", GetUsStockExchangeText(), " companies");
+                        ProgressMessage = string.Concat("Getting ", GetUsStockExchangeText(), " companies");
                         _companies = new ObservableCollection<Company>(await Task.Run(() => GetUsCompanies(excel, range, firstUsedRow, StockCodeTextBox)));
                     }
                     else
                     {
-                        StatusMessageTextBlock = string.Concat("Spreadsheet does not exist. You can download it from 'https://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=", GetUsStockExchangeText(), "'");
+                        ProgressMessage = string.Concat("Spreadsheet does not exist. You can download it from 'https://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=", GetUsStockExchangeText(), "'");
                     }
                 }
             }
@@ -352,7 +328,7 @@ namespace StockPriceValuation
                 CancelButtonEnabled = true;
                 ResetProgressBar();
                 ProgressBarMax = _companies.Count();
-                StatusMessageTextBlock = "Valuating stock prices";
+                ProgressMessage = "Valuating stock prices";
 
                 foreach (var company in _companies)
                 {
@@ -360,7 +336,7 @@ namespace StockPriceValuation
                     {
                         var stock = company.Stock;
 
-                        StatusMessageTextBlock = string.Concat("Valuating ", company.Name);
+                        ProgressMessage = string.Concat("Valuating ", company.Name);
 
                         if (string.IsNullOrEmpty(stock.Decision))
                         {
@@ -387,7 +363,7 @@ namespace StockPriceValuation
 
                             if (IsDisplayingCompany(stock))
                             {
-                                ListOfCompanies.Add(company);
+                                Companies.Add(company);
                             }
                         }
 
@@ -400,7 +376,7 @@ namespace StockPriceValuation
                 }
 
                 var actionText = GetActionText(isCancelled, isPaused);
-                StatusMessageTextBlock = string.Concat(actionText, " valuations");
+                ProgressMessage = string.Concat(actionText, " valuations");
                 ResetProgressBar();
                 EnableControls();
                 PauseButtonEnabled = false;
@@ -469,7 +445,7 @@ namespace StockPriceValuation
 
         private void HaltValuation(string actionText)
         {
-            StatusMessageTextBlock = string.Concat(actionText, " valuation");
+            ProgressMessage = string.Concat(actionText, " valuation");
 
             if (actionText == "Cancelling")
             {
@@ -511,13 +487,13 @@ namespace StockPriceValuation
         {
             if (_companies != null && _companies.Any())
             {
-                ListOfCompanies.Clear();
+                Companies.Clear();
 
                 foreach (var company in _companies)
                 {
                     if (IsDisplayingCompany(company.Stock))
                     {
-                        ListOfCompanies.Add(company);
+                        Companies.Add(company);
                     }
                 }
             }
@@ -562,16 +538,20 @@ namespace StockPriceValuation
             return excel.GetRange(firstUsedRow, firstUsedColumn);
         }
 
-        public ObservableCollection<AusCompany> GetAsxCompanies(Excel excel, Range range, int firstUsedRow, string stockCode)
+        public ObservableCollection<Company> GetAsxCompanies(Excel excel, Range range, int firstUsedRow, string stockCode)
         {
-            var companies = new ObservableCollection<AusCompany>();
+            var companies = new ObservableCollection<Company>();
 
             for (var i = firstUsedRow - 1; i < range.Rows.Count; i++)
             {
-                var company = new AusCompany();
-                company.Name = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value;
-                company.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
-                company.Stock.StockExchange = Stock.Exchange.ASX;
+                var company = new AusCompany
+                {
+                    Name = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value
+                };
+
+                var rangeValue = (excel.Worksheet.Cells[i + 1, 2] as Range).Value;
+                company.Stock.Code = rangeValue.ToString();
+                company.Stock.StockExchange = GetStockExchange();
                 var industry = (string)(excel.Worksheet.Cells[i + 1, 3] as Range).Value;
 
                 if (!_stockPriceValuationModel.Industries.Contains(industry))
@@ -599,16 +579,21 @@ namespace StockPriceValuation
             return companies;
         }
 
-        public ObservableCollection<UsaCompany> GetUsCompanies(Excel excel, Range range, int firstUsedRow, string stockCode)
+        public ObservableCollection<Company> GetUsCompanies(Excel excel, Range range, int firstUsedRow, string stockCode)
         {
-            var companies = new ObservableCollection<UsaCompany>();
+            var companies = new ObservableCollection<Company>();
 
             for (var i = firstUsedRow - 1; i < range.Rows.Count; i++)
             {
-                var company = new UsaCompany();
-                company.Name = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value;
-                company.Stock.Code = (string)(excel.Worksheet.Cells[i + 1, 1] as Range).Value.ToString();
-                company.Stock.StockExchange = Stock.Exchange.NYSE;
+                var company = new UsaCompany
+                {
+                    Name = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value
+                };
+
+                var rangeValue = (excel.Worksheet.Cells[i + 1, 2] as Range).Value;
+                company.Stock.Code = rangeValue.ToString();
+
+                company.Stock.StockExchange = GetStockExchange();
                 var industry = (string)(excel.Worksheet.Cells[i + 1, 8] as Range).Value;
 
                 if (!_stockPriceValuationModel.Industries.Contains(industry))
@@ -642,6 +627,26 @@ namespace StockPriceValuation
             excel.Close();
 
             return companies;
+        }
+
+        internal Stock.Exchange GetStockExchange()
+        {
+            var stockExchange = new Stock.Exchange();
+
+            if (AsxRadioButtonChecked)
+            {
+                stockExchange = Stock.Exchange.ASX;
+            }
+            else if (NyseRadioButtonChecked)
+            {
+                stockExchange = Stock.Exchange.NYSE;
+            }
+            else
+            {
+                stockExchange = Stock.Exchange.NASDAQ;
+            }
+
+            return stockExchange;
         }
 
         public void GetYahooFinanceResponse(Stock stock)
@@ -724,6 +729,26 @@ namespace StockPriceValuation
                     _stockPriceValuationModel.ProgressBarIsIndeterminate = value;
                     NotifyPropertyChanged("ProgressBarIsIndeterminate");
                 }
+            }
+        }
+
+        public string ProgressMessage
+        {
+            get { return _stockPriceValuationModel.ProgressMessage; }
+            set
+            {
+                _stockPriceValuationModel.ProgressMessage = value;
+                NotifyPropertyChanged("ProgressMessage");
+            }
+        }
+
+        public ObservableCollection<Company> Companies
+        {
+            get { return _stockPriceValuationModel.Companies; }
+            set
+            {
+                _stockPriceValuationModel.Companies = value;
+                NotifyPropertyChanged("Companies");
             }
         }
 
