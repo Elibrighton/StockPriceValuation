@@ -4,14 +4,10 @@ using StockPriceValuation.Models;
 using StockPriceValuation.Services;
 using StockPriceValuation.ViewModels;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
 
 namespace StockPriceValuation
