@@ -16,7 +16,11 @@ namespace StockPriceValuation
     {
         private const int InitialProgressBarMax = 1;
         private const int InitialProgressBarValue = 0;
-
+        private const string DownloadDirectory = @"C:\Users\st3gs\Downloads\";
+        private const int ColumnSymbol = 1;
+        private const int ColumnName = 2;
+        private const int ColumnSector = 10;
+        private const int ColumnIndustry = 11;
         private readonly IStockPriceValuationModel _stockPriceValuationModel;
 
         private ObservableCollection<Company> _companies;
@@ -287,9 +291,9 @@ namespace StockPriceValuation
                 }
                 else if (_nyseRadioButtonChecked || _nasdaqRadioButtonChecked)
                 {
-                    var path = @"C:\Users\st3gs\Downloads\companylist.csv";
+                    var nasdaqScreenerPath = GetNasdaqScreenerPath();
 
-                    if (File.Exists(path))
+                    if (File.Exists(nasdaqScreenerPath))
                     {
                         ProgressMessage = "Importing spreadsheet";
                         ProgressBarIsIndeterminate = true;
@@ -378,6 +382,29 @@ namespace StockPriceValuation
                 PauseButtonEnabled = false;
                 CancelButtonEnabled = false;
             }
+        }
+
+        private static string GetNasdaqScreenerPath()
+        {
+            var nasdaqScreenerPath = string.Empty;
+
+            if (Directory.Exists(DownloadDirectory))
+            {
+                var files = Directory.GetFiles(DownloadDirectory);
+
+                foreach (string file in files)
+                {
+                    var fileName = Path.GetFileName(file);
+
+                    if (fileName.Contains("nasdaq_screener_"))
+                    {
+                        nasdaqScreenerPath = file;
+                        break;
+                    }
+                }
+            }
+
+            return nasdaqScreenerPath;
         }
 
         private string GetActionText(bool isCancelled, bool isPaused)
@@ -583,14 +610,14 @@ namespace StockPriceValuation
             {
                 var company = new UsaCompany
                 {
-                    Name = (string)(excel.Worksheet.Cells[i + 1, 2] as Range).Value
+                    Name = (string)(excel.Worksheet.Cells[i + 1, ColumnName] as Range).Value
                 };
 
-                var rangeValue = (excel.Worksheet.Cells[i + 1, 1] as Range).Value;
+                var rangeValue = (excel.Worksheet.Cells[i + 1, ColumnSymbol] as Range).Value;
                 company.Stock.Code = rangeValue.ToString();
 
                 company.Stock.StockExchange = GetStockExchange();
-                var industry = (string)(excel.Worksheet.Cells[i + 1, 8] as Range).Value;
+                var industry = (string)(excel.Worksheet.Cells[i + 1, ColumnIndustry] as Range).Value;
 
                 if (!_stockPriceValuationModel.Industries.Contains(industry))
                 {
@@ -598,7 +625,7 @@ namespace StockPriceValuation
                 }
 
                 company.Industry = industry;
-                var sector = (string)(excel.Worksheet.Cells[i + 1, 7] as Range).Value;
+                var sector = (string)(excel.Worksheet.Cells[i + 1, ColumnSector] as Range).Value;
 
                 if (!_stockPriceValuationModel.Sectors.Contains(sector))
                 {
@@ -613,7 +640,7 @@ namespace StockPriceValuation
                 }
 
                 ProgressBarValue++;
-                
+
                 if (!string.IsNullOrEmpty(stockCode) && string.Equals(company.Stock.Code, stockCode, StringComparison.OrdinalIgnoreCase))
                 {
                     break;
