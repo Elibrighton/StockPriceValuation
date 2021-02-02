@@ -298,7 +298,7 @@ namespace StockPriceValuation
                         ProgressMessage = "Importing spreadsheet";
                         ProgressBarIsIndeterminate = true;
 
-                        var excel = await Task.Run(() => OpenExcel(path));
+                        var excel = await Task.Run(() => OpenExcel(nasdaqScreenerPath));
 
                         var firstUsedRow = 2;
                         var firstUsedColumn = 1;
