@@ -1,10 +1,8 @@
 ﻿using StockPriceValuation.Services.ExtensionMethods;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace StockPriceValuation.Services
 {
@@ -167,30 +165,45 @@ namespace StockPriceValuation.Services
                     {
                         var childSpanNodes = childNode.SelectNodes("span");
 
-                        if (childSpanNodes != null)
+                        if (childSpanNodes == null)
                         {
-                            foreach (var childTwoNode in childSpanNodes)
+                            var innerText = childNode.InnerText;
+                            double convertedInnerText;
+                            var index = innerText.IndexOf('x');
+
+                            if (index > 0)
                             {
-                                var innerText = childTwoNode.InnerText;
-
-                                if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("Ask", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    double convertedInnerText;
-                                    var index = innerText.IndexOf('x');
-
-                                    if (index > 0)
-                                    {
-                                        innerText = innerText.Substring(0, index - 1);
-                                    }
-
-                                    if (Double.TryParse(innerText, out convertedInnerText))
-                                    {
-                                        Price = convertedInnerText;
-                                        HasPrice = true;
-                                        break;
-                                    }
-                                }
+                                innerText = innerText.Substring(0, index - 1);
                             }
+
+                            if (double.TryParse(innerText, out convertedInnerText))
+                            {
+                                Price = convertedInnerText;
+                                HasPrice = true;
+                                break;
+                            }
+                            //foreach (var childTwoNode in childSpanNodes)
+                            //{
+                            //    var innerText = childTwoNode.InnerText;
+
+                            //    if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("Ask", StringComparison.OrdinalIgnoreCase))
+                            //    {
+                            //        double convertedInnerText;
+                            //        var index = innerText.IndexOf('x');
+
+                            //        if (index > 0)
+                            //        {
+                            //            innerText = innerText.Substring(0, index - 1);
+                            //        }
+
+                            //        if (Double.TryParse(innerText, out convertedInnerText))
+                            //        {
+                            //            Price = convertedInnerText;
+                            //            HasPrice = true;
+                            //            break;
+                            //        }
+                            //    }
+                            //}
 
                             if (HasPrice)
                             {
@@ -267,22 +280,34 @@ namespace StockPriceValuation.Services
                     {
                         var childSpanNodes = childNode.SelectNodes("span");
 
-                        foreach (var childTwoNode in childSpanNodes)
+                        if (childSpanNodes == null)
                         {
-                            var innerText = childTwoNode.InnerText;
+                            var innerText = childNode.InnerText;
+                            double convertedInnerText;
 
-                            if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("EPS (TTM)", StringComparison.OrdinalIgnoreCase))
+                            if (double.TryParse(innerText, out convertedInnerText))
                             {
-                                double convertedInnerText;
-
-                                if (Double.TryParse(innerText, out convertedInnerText))
-                                {
-                                    TtmEps = convertedInnerText;
-                                    HasTtmEps = true;
-                                    break;
-                                }
+                                TtmEps = convertedInnerText;
+                                HasTtmEps = true;
+                                break;
                             }
                         }
+                        //foreach (var childTwoNode in childSpanNodes)
+                        //{
+                        //    var innerText = childTwoNode.InnerText;
+
+                        //    if (!string.IsNullOrEmpty(innerText) && !childTwoNode.InnerText.Contains("EPS (TTM)", StringComparison.OrdinalIgnoreCase))
+                        //    {
+                        //        double convertedInnerText;
+
+                        //        if (Double.TryParse(innerText, out convertedInnerText))
+                        //        {
+                        //            TtmEps = convertedInnerText;
+                        //            HasTtmEps = true;
+                        //            break;
+                        //        }
+                        //    }
+                        //}
 
                         if (HasTtmEps)
                         {
@@ -302,14 +327,16 @@ namespace StockPriceValuation.Services
 
                 foreach (var childNode in childrenNodes)
                 {
-                    var innerText = childNode.InnerText;
+                    var childSpanNodes = childNode.SelectNodes("span");
 
-                    if (!string.IsNullOrEmpty(innerText) && !innerText.Contains("Next 5 years (per annum)", StringComparison.OrdinalIgnoreCase))
+                    if (childSpanNodes == null)
                     {
+                        var innerText = childNode.InnerText;
+
                         innerText = innerText.Replace("%", "");
                         double convertedInnerText;
 
-                        if (Double.TryParse(innerText, out convertedInnerText))
+                        if (double.TryParse(innerText, out convertedInnerText))
                         {
                             SecondEps.Value = convertedInnerText / 100;
                             SecondEps.HasValue = true;
