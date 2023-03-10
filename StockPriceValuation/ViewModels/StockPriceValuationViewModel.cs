@@ -16,7 +16,7 @@ namespace StockPriceValuation
     {
         private const int InitialProgressBarMax = 1;
         private const int InitialProgressBarValue = 0;
-        private const string DownloadDirectory = @"C:\Users\st3gs\Downloads\";
+        private const string DownloadDirectory = @"C:\Users\Eli\Downloads\";
         private const int ColumnSymbol = 1;
         private const int ColumnName = 2;
         private const int ColumnSector = 10;
